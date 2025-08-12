@@ -63,7 +63,7 @@ export function Train() {
   ];
 
   return (
-    <div className="section-container" style={{ maxWidth: "300px" }}>
+    <div className="section-container">
       <div className="section-header">
         <span>Tåg</span>
         <button>Tåg karta</button>

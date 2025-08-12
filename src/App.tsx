@@ -7,7 +7,6 @@ import { Ticket } from "./components/Ticket";
 import { Train } from "./components/Train";
 import "./components/modules.css";
 
-// The FormData interface remains the same
 export interface FormData {
   ersattning: {
     caseNumber: string;
@@ -68,15 +67,32 @@ function App() {
     field: string,
     value: string
   ) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [section]: { ...prevData[section], [field]: value },
-    }));
+    // A little logic to update the content when a template is selected
+    if (section === "templates" && field === "selectedTemplate") {
+      const newContent =
+        value === "delay_reason_1"
+          ? "Innehåll för förseningsorsak 1."
+          : value === "delay_reason_2"
+          ? "Innehåll för förseningsorsak 2."
+          : "";
+      setFormData((prevData) => ({
+        ...prevData,
+        templates: {
+          ...prevData.templates,
+          selectedTemplate: value,
+          templateContent: newContent,
+        },
+      }));
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [section]: { ...prevData[section], [field]: value },
+      }));
+    }
   };
 
   return (
     <div className="app-container">
-      {/* The entire app is a two-column layout */}
       <ErsattningVidForsening
         data={formData.ersattning}
         onChange={(field, value) =>
@@ -89,11 +105,19 @@ function App() {
           handleDataChange("merkostnader", field, value)
         }
       />
-      <Ticket
-        data={formData.ticket}
-        onChange={(field, value) => handleDataChange("ticket", field, value)}
-      />
-      <Train />
+      <div className="row-container">
+        <div className="ticket-container">
+          <Ticket
+            data={formData.ticket}
+            onChange={(field, value) =>
+              handleDataChange("ticket", field, value)
+            }
+          />
+        </div>
+        <div className="train-container">
+          <Train />
+        </div>
+      </div>
       <Templates
         data={formData.templates}
         onChange={(field, value) => handleDataChange("templates", field, value)}

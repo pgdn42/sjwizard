@@ -11,7 +11,7 @@ interface TicketProps {
 
 export function Ticket({ data, onChange }: TicketProps) {
   return (
-    <div className="section-container" style={{ maxWidth: "150px" }}>
+    <div className="section-container">
       <div className="section-header">
         <span>Biljett</span>
       </div>

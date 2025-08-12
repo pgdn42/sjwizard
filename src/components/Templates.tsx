@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface TemplatesProps {
   data: {
@@ -9,32 +9,51 @@ interface TemplatesProps {
 }
 
 export function Templates({ data, onChange }: TemplatesProps) {
+  const [isModalOpen, setModalOpen] = useState(false);
+
   return (
-    <div className="section-container">
-      <div className="section-header">
-        <span>Mallar</span>
-        <button>Kopiera mall</button>
+    <>
+      <div className="section-container">
+        <div className="section-header">
+          <span>Mallar</span>
+        </div>
+        <div className="template-controls">
+          <select
+            value={data.selectedTemplate}
+            onChange={(e) => onChange("selectedTemplate", e.target.value)}
+            className="template-select"
+          >
+            <option value="">Välj en mall...</option>
+            <option value="delay_reason_1">Förseningsorsak 1</option>
+            <option value="delay_reason_2">Förseningsorsak 2</option>
+          </select>
+          <button className="button-fixed-width">Kopiera</button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="button-fixed-width"
+          >
+            Add
+          </button>
+        </div>
       </div>
-      {/* Use the new class for the button group */}
-      <div className="template-buttons">
-        <select
-          value={data.selectedTemplate}
-          onChange={(e) => onChange("selectedTemplate", e.target.value)}
-        >
-          <option value="">Templates</option>
-          <option value="delay_reason_1">Förseningsorsak 1</option>
-          <option value="delay_reason_2">Förseningsorsak 2</option>
-        </select>
-        <button>Add</button>
-        <button>Update</button>
-        <button>Remove</button>
-      </div>
-      <textarea
-        placeholder="Template"
-        rows={4} /* Reduced row count */
-        value={data.templateContent}
-        onChange={(e) => onChange("templateContent", e.target.value)}
-      ></textarea>
-    </div>
+
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Redigera mall</h2>
+            <textarea
+              placeholder="Mallinnehåll"
+              rows={6}
+              value={data.templateContent}
+              onChange={(e) => onChange("templateContent", e.target.value)}
+            ></textarea>
+            <div className="modal-actions">
+              <button onClick={() => setModalOpen(false)}>Avbryt</button>
+              <button onClick={() => setModalOpen(false)}>Spara</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

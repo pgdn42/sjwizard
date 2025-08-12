@@ -16,8 +16,8 @@ export function Notes({ data, onChange }: NotesProps) {
       <div className="section-header">
         <span>Noteringar</span>
       </div>
-      {/* Use the new three-column grid here */}
-      <div className="form-grid-three-col">
+      {/* Use the new flex container and width classes */}
+      <div className="notes-input-group">
         <input
           type="text"
           placeholder="Bokningsnummer"
@@ -40,7 +40,6 @@ export function Notes({ data, onChange }: NotesProps) {
       <textarea
         placeholder="Anteckningar"
         rows={4} /* Reduced row count */
-        style={{ marginTop: "0px" }}
         value={data.notesContent}
         onChange={(e) => onChange("notesContent", e.target.value)}
       ></textarea>

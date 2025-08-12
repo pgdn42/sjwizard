@@ -14,6 +14,28 @@
   --transition-speed: 0.2s;
 }
 
+.app-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.row-container {
+  display: flex;
+  gap: 15px;
+}
+
+.ticket-container {
+  flex: 0 0 30%;
+}
+
+.train-container {
+  flex: 1;
+}
+
 /* The look of a generic section component */
 .section-container {
   background-color: var(--color-surface);
@@ -23,6 +45,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -50,18 +74,79 @@
   grid-column: span 2;
 }
 
-.notes-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+/* Flex containers for input groups */
+.input-group,
+.notes-input-group,
+.merkostnader-input-group {
+  display: flex;
   gap: 8px;
-  margin-bottom: 8px;
+  align-items: center;
 }
 
-.templates-grid {
-  display: grid;
-  grid-template-columns: 3fr 1fr 1fr 1fr;
+/* --- Sizing Utilities --- */
+.width-small {
+  flex: 1;
+}
+.width-medium {
+  flex: 2;
+}
+.width-large {
+  flex: 3;
+}
+
+/* --- Template Component Specific Styles --- */
+.template-controls {
+  display: flex;
   gap: 8px;
-  margin-bottom: 8px;
+  align-items: center;
+}
+
+.template-select {
+  flex-grow: 1;
+}
+
+.button-fixed-width {
+  flex-shrink: 0;
+  width: 80px;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--color-surface);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 450px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content h2 {
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* Styles for generic form elements within modules */

@@ -17,14 +17,16 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
         <span>Merkostnader</span>
         <button>KOPIERA MK MALL</button>
       </div>
-      <div className="form-grid">
+      <div className="merkostnader-input-group">
         <input
           type="text"
+          className="width-medium"
           placeholder="Ärendenummer"
           value={data.caseNumber}
           onChange={(e) => onChange("caseNumber", e.target.value)}
         />
         <select
+          className="width-medium"
           value={data.category}
           onChange={(e) => onChange("category", e.target.value)}
         >
@@ -33,6 +35,7 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           <option value="hotel">Hotell</option>
         </select>
         <select
+          className="width-medium"
           value={data.decision}
           onChange={(e) => onChange("decision", e.target.value)}
         >
@@ -41,6 +44,7 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           <option value="denied">Nekad</option>
         </select>
         <select
+          className="width-medium"
           value={data.compensation}
           onChange={(e) => onChange("compensation", e.target.value)}
         >
