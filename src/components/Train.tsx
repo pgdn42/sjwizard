@@ -47,13 +47,6 @@ export function Train() {
       isUrgent: true,
     },
     {
-      from: "Lund C",
-      to: "Stockholm C",
-      time: "2024-12-11 13:19",
-      delay: "120 min",
-      isUrgent: true,
-    },
-    {
       from: "Linköping C",
       to: "Malmö C",
       time: "2024-12-16 1",
@@ -66,7 +59,7 @@ export function Train() {
     <div className="section-container">
       <div className="section-header">
         <span>Tåg</span>
-        <button>Tåg karta</button>
+        <button> </button>
       </div>
       <div>
         {trains.map((train, index) => (

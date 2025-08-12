@@ -1,4 +1,5 @@
 import React from "react";
+import { FloatingLabel } from "./FloatingLabel";
 
 interface ErsattningProps {
   data: {
@@ -21,49 +22,50 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
         <span>Ersättning vid försening</span>
       </div>
       <div className="ersattning-input-group">
-        <input
-          className="width-large"
-          type="text"
-          placeholder="Ärendenummer"
-          value={data.caseNumber}
-          onChange={(e) => onChange("caseNumber", e.target.value)}
-        />
-        <input
-          className="width-small"
-          type="text"
-          placeholder="Beslut"
-          value={data.decision}
-          onChange={(e) => onChange("decision", e.target.value)}
-        />
-        <input
-          className="width-small"
-          type="text"
-          placeholder="Tågnummer"
-          value={data.trainNumber}
-          onChange={(e) => onChange("trainNumber", e.target.value)}
-        />
-        <input
-          className="width-large"
-          type="date"
-          value={data.departureDate}
-          onChange={(e) => onChange("departureDate", e.target.value)}
-        />
+        <FloatingLabel label="Ärendenummer" className="width-large">
+          <input
+            type="text"
+            value={data.caseNumber}
+            onChange={(e) => onChange("caseNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Beslut" className="width-small">
+          <input
+            type="text"
+            value={data.decision}
+            onChange={(e) => onChange("decision", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Tågnummer" className="width-small">
+          <input
+            type="text"
+            value={data.trainNumber}
+            onChange={(e) => onChange("trainNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Avgångsdatum" className="width-large">
+          <input
+            type="date"
+            value={data.departureDate}
+            onChange={(e) => onChange("departureDate", e.target.value)}
+          />
+        </FloatingLabel>
       </div>
       <div className="ersattning-input-group">
-        <input
-          className="width-large"
-          type="text"
-          placeholder="Avgångsstation"
-          value={data.departureStation}
-          onChange={(e) => onChange("departureStation", e.target.value)}
-        />
-        <input
-          className="width-large"
-          type="text"
-          placeholder="Ankomststation"
-          value={data.arrivalStation}
-          onChange={(e) => onChange("arrivalStation", e.target.value)}
-        />
+        <FloatingLabel label="Avgångsstation" className="width-large">
+          <input
+            type="text"
+            value={data.departureStation}
+            onChange={(e) => onChange("departureStation", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Ankomststation" className="width-large">
+          <input
+            type="text"
+            value={data.arrivalStation}
+            onChange={(e) => onChange("arrivalStation", e.target.value)}
+          />
+        </FloatingLabel>
       </div>
     </div>
   );

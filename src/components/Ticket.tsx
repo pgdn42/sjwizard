@@ -1,4 +1,5 @@
 import React from "react";
+import { FloatingLabel } from "./FloatingLabel";
 
 interface TicketProps {
   data: {
@@ -16,24 +17,27 @@ export function Ticket({ data, onChange }: TicketProps) {
         <span>Biljett</span>
       </div>
       <div className="form-grid-single-col">
-        <input
-          type="text"
-          placeholder="Bokningsnummer"
-          value={data.bookingNumber}
-          onChange={(e) => onChange("bookingNumber", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Kortnummer"
-          value={data.cardNumber}
-          onChange={(e) => onChange("cardNumber", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Biljett kostnad"
-          value={data.cost}
-          onChange={(e) => onChange("cost", e.target.value)}
-        />
+        <FloatingLabel label="Bokningsnummer">
+          <input
+            type="text"
+            value={data.bookingNumber}
+            onChange={(e) => onChange("bookingNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Kortnummer">
+          <input
+            type="text"
+            value={data.cardNumber}
+            onChange={(e) => onChange("cardNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Biljettkostnad">
+          <input
+            type="text"
+            value={data.cost}
+            onChange={(e) => onChange("cost", e.target.value)}
+          />
+        </FloatingLabel>
       </div>
     </div>
   );

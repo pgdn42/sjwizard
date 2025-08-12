@@ -29,7 +29,7 @@
 }
 
 .ticket-container {
-  flex: 0 0 30%;
+  flex: 0 0 35%;
 }
 
 .train-container {
@@ -170,4 +170,57 @@ button {
 
 button:hover {
   background-color: #00c2cc;
+}
+
+/* --- Floating Label Styles --- */
+/* --- Floating Label Styles --- */
+.floating-label-container {
+  position: relative;
+  width: 100%;
+}
+
+.floating-label-container .label {
+  position: absolute;
+  top: 50%;
+  left: 5px; /* <-- This is correct, keep it at 5px */
+  transform: translateY(-50%);
+  color: var(--color-placeholder);
+  background-color: var(--color-surface);
+  padding: 0 4px;
+  transition: all var(--transition-speed) ease-in-out;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Apply to any input, select, or textarea within the container */
+.floating-label-container .input {
+  /* REVERT THIS back to the original padding */
+  padding: 8px 10px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.floating-label-container textarea.input {
+  height: auto;
+}
+
+.floating-label-container .input::placeholder {
+  color: transparent;
+}
+
+.floating-label-container .input:focus + .label,
+.floating-label-container .input:not(:placeholder-shown) + .label {
+  top: 0;
+  left: 0px;
+  transform: translateY(-50%) scale(0.85);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+.floating-label-container select.input:focus + .label,
+.floating-label-container select.input:valid + .label {
+  top: 0;
+  transform: translateY(-50%) scale(0.85);
+  color: var(--color-primary);
+  font-weight: 500;
+  left: 0px; /* Your custom position adjustment */
 }

@@ -50,7 +50,7 @@ function App() {
     merkostnader: {
       caseNumber: "",
       category: "",
-      decision: "",
+      decision: "approved",
       compensation: "",
     },
     templates: { selectedTemplate: "", templateContent: "" },

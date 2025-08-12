@@ -1,4 +1,5 @@
 import React from "react";
+import { FloatingLabel } from "./FloatingLabel";
 
 interface MerkostnaderProps {
   data: {
@@ -18,29 +19,32 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
         <button>KOPIERA MK MALL</button>
       </div>
       <div className="merkostnader-input-group">
-        <input
-          type="text"
-          className="width-medium"
-          placeholder="Ärendenummer"
-          value={data.caseNumber}
-          onChange={(e) => onChange("caseNumber", e.target.value)}
-        />
-        <select
-          className="width-medium"
-          value={data.decision}
-          onChange={(e) => onChange("decision", e.target.value)}
-        >
-          <option value="">Beslut</option>
-          <option value="approved">Godkänd</option>
-          <option value="denied">Nekad</option>
-        </select>
-        <input
-          type="text"
-          placeholder="Ersättning"
-          className="width-medium"
-          value={data.compensation}
-          onChange={(e) => onChange("compensation", e.target.value)}
-        />
+        <FloatingLabel label="Ärendenummer" className="width-medium">
+          <input
+            type="text"
+            value={data.caseNumber}
+            onChange={(e) => onChange("caseNumber", e.target.value)}
+          />
+        </FloatingLabel>
+
+        <FloatingLabel label="Beslut" className="width-medium">
+          <select
+            required
+            value={data.decision}
+            onChange={(e) => onChange("decision", e.target.value)}
+          >
+            <option value="approved">Godkänd</option>
+            <option value="denied">Nekad</option>
+          </select>
+        </FloatingLabel>
+
+        <FloatingLabel label="Ersättning" className="width-medium">
+          <input
+            type="text"
+            value={data.compensation}
+            onChange={(e) => onChange("compensation", e.target.value)}
+          />
+        </FloatingLabel>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import { FloatingLabel } from "./FloatingLabel";
 
 interface NotesProps {
   data: {
@@ -16,33 +17,36 @@ export function Notes({ data, onChange }: NotesProps) {
       <div className="section-header">
         <span>Noteringar</span>
       </div>
-      {/* Use the new flex container and width classes */}
       <div className="notes-input-group">
-        <input
-          type="text"
-          placeholder="Bokningsnummer"
-          value={data.bookingNumber}
-          onChange={(e) => onChange("bookingNumber", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Nytt bokningsnummer"
-          value={data.newBookingNumber}
-          onChange={(e) => onChange("newBookingNumber", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Extra notering"
-          value={data.extraNote}
-          onChange={(e) => onChange("extraNote", e.target.value)}
-        />
+        <FloatingLabel label="Bokningsnummer">
+          <input
+            type="text"
+            value={data.bookingNumber}
+            onChange={(e) => onChange("bookingNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Nytt bokningsnummer">
+          <input
+            type="text"
+            value={data.newBookingNumber}
+            onChange={(e) => onChange("newBookingNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Extra notering">
+          <input
+            type="text"
+            value={data.extraNote}
+            onChange={(e) => onChange("extraNote", e.target.value)}
+          />
+        </FloatingLabel>
       </div>
-      <textarea
-        placeholder="Anteckningar"
-        rows={4} /* Reduced row count */
-        value={data.notesContent}
-        onChange={(e) => onChange("notesContent", e.target.value)}
-      ></textarea>
+      <FloatingLabel label="Anteckningar">
+        <textarea
+          rows={4}
+          value={data.notesContent}
+          onChange={(e) => onChange("notesContent", e.target.value)}
+        ></textarea>
+      </FloatingLabel>
     </div>
   );
 }
