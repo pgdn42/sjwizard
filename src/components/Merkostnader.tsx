@@ -27,15 +27,6 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
         />
         <select
           className="width-medium"
-          value={data.category}
-          onChange={(e) => onChange("category", e.target.value)}
-        >
-          <option value="">Kategori</option>
-          <option value="taxi">Taxi</option>
-          <option value="hotel">Hotell</option>
-        </select>
-        <select
-          className="width-medium"
           value={data.decision}
           onChange={(e) => onChange("decision", e.target.value)}
         >
@@ -43,15 +34,13 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           <option value="approved">Godkänd</option>
           <option value="denied">Nekad</option>
         </select>
-        <select
+        <input
+          type="text"
+          placeholder="Ersättning"
           className="width-medium"
           value={data.compensation}
           onChange={(e) => onChange("compensation", e.target.value)}
-        >
-          <option value="">Ersättning</option>
-          <option value="full">Full</option>
-          <option value="partial">Delvis</option>
-        </select>
+        />
       </div>
     </div>
   );

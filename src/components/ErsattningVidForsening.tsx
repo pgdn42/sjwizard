@@ -20,57 +20,49 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
       <div className="section-header">
         <span>Ersättning vid försening</span>
       </div>
-      <div className="ersattning-grid">
+      <div className="ersattning-input-group">
         <input
-          className="grid-span-2"
+          className="width-large"
           type="text"
           placeholder="Ärendenummer"
           value={data.caseNumber}
           onChange={(e) => onChange("caseNumber", e.target.value)}
         />
         <input
+          className="width-small"
           type="text"
           placeholder="Beslut"
           value={data.decision}
           onChange={(e) => onChange("decision", e.target.value)}
         />
         <input
+          className="width-small"
           type="text"
           placeholder="Tågnummer"
           value={data.trainNumber}
           onChange={(e) => onChange("trainNumber", e.target.value)}
         />
         <input
-          className="date-input"
+          className="width-large"
           type="date"
           value={data.departureDate}
           onChange={(e) => onChange("departureDate", e.target.value)}
         />
+      </div>
+      <div className="ersattning-input-group">
         <input
-          className="grid-span-2"
+          className="width-large"
           type="text"
           placeholder="Avgångsstation"
           value={data.departureStation}
           onChange={(e) => onChange("departureStation", e.target.value)}
         />
         <input
-          className="grid-span-2"
+          className="width-large"
           type="text"
           placeholder="Ankomststation"
           value={data.arrivalStation}
           onChange={(e) => onChange("arrivalStation", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Försening"
-          value={data.delay}
-          onChange={(e) => onChange("delay", e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Producent"
-          value={data.producer}
-          onChange={(e) => onChange("producer", e.target.value)}
         />
       </div>
     </div>

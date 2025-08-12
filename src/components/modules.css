@@ -61,23 +61,10 @@
   align-items: center;
 }
 
-/* Internal grid systems for specific modules */
-.ersattning-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.ersattning-grid .grid-span-2 {
-  grid-column: span 2;
-}
-.ersattning-grid .date-input {
-  grid-column: span 2;
-}
-
 /* Flex containers for input groups */
-.input-group,
 .notes-input-group,
-.merkostnader-input-group {
+.merkostnader-input-group,
+.ersattning-input-group {
   display: flex;
   gap: 8px;
   align-items: center;
