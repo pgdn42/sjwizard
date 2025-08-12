@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import CopyIcon from "../assets/copyIcon";
 
 interface TemplatesProps {
   data: {
@@ -16,6 +17,9 @@ export function Templates({ data, onChange }: TemplatesProps) {
       <div className="section-container">
         <div className="section-header">
           <span>Mallar</span>
+          <button className="button-svg" title="Kopiera mall">
+            <CopyIcon />
+          </button>
         </div>
         <div className="template-controls">
           <select
@@ -27,7 +31,6 @@ export function Templates({ data, onChange }: TemplatesProps) {
             <option value="delay_reason_1">Förseningsorsak 1</option>
             <option value="delay_reason_2">Förseningsorsak 2</option>
           </select>
-          <button className="button-fixed-width">Kopiera</button>
           <button
             onClick={() => setModalOpen(true)}
             className="button-fixed-width"

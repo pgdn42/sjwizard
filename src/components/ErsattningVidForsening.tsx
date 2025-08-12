@@ -1,5 +1,6 @@
 import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
+import CopyIcon from "../assets/copyIcon";
 
 interface ErsattningProps {
   data: {
@@ -20,9 +21,12 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
     <div className="section-container">
       <div className="section-header">
         <span>Ersättning vid försening</span>
+        <button className="button-svg" title="Kopiera försening mall">
+          <CopyIcon />
+        </button>
       </div>
       <div className="ersattning-input-group">
-        <FloatingLabel label="Ärendenummer" className="width-large">
+        <FloatingLabel label="Ärendenummer" className="width-medium">
           <input
             type="text"
             value={data.caseNumber}
@@ -43,13 +47,6 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
             onChange={(e) => onChange("trainNumber", e.target.value)}
           />
         </FloatingLabel>
-        <FloatingLabel label="Avgångsdatum" className="width-large">
-          <input
-            type="date"
-            value={data.departureDate}
-            onChange={(e) => onChange("departureDate", e.target.value)}
-          />
-        </FloatingLabel>
       </div>
       <div className="ersattning-input-group">
         <FloatingLabel label="Avgångsstation" className="width-large">
@@ -64,6 +61,13 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
             type="text"
             value={data.arrivalStation}
             onChange={(e) => onChange("arrivalStation", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Avgångsdatum" className="width-large">
+          <input
+            type="date"
+            value={data.departureDate}
+            onChange={(e) => onChange("departureDate", e.target.value)}
           />
         </FloatingLabel>
       </div>

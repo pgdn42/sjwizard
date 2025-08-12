@@ -1,5 +1,6 @@
 import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
+import CopyIcon from "../assets/CopyIcon";
 
 interface MerkostnaderProps {
   data: {
@@ -16,7 +17,9 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
     <div className="section-container">
       <div className="section-header">
         <span>Merkostnader</span>
-        <button>KOPIERA MK MALL</button>
+        <button className="button-svg">
+          <CopyIcon />
+        </button>
       </div>
       <div className="merkostnader-input-group">
         <FloatingLabel label="Ärendenummer" className="width-medium">

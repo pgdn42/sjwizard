@@ -46,6 +46,7 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
 }
 
@@ -139,8 +140,7 @@
 /* Styles for generic form elements within modules */
 input,
 select,
-textarea,
-button {
+textarea {
   font-family: var(--font-family);
   font-size: 1em;
   background-color: var(--color-background);
@@ -160,19 +160,6 @@ textarea:focus {
   box-shadow: 0 0 0 2px rgba(0, 173, 181, 0.3);
 }
 
-button {
-  background-color: var(--color-primary);
-  color: #ffffff;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #00c2cc;
-}
-
-/* --- Floating Label Styles --- */
 /* --- Floating Label Styles --- */
 .floating-label-container {
   position: relative;
@@ -185,7 +172,7 @@ button:hover {
   left: 5px; /* <-- This is correct, keep it at 5px */
   transform: translateY(-50%);
   color: var(--color-placeholder);
-  background-color: var(--color-surface);
+  background-color: var(--color-background);
   padding: 0 4px;
   transition: all var(--transition-speed) ease-in-out;
   pointer-events: none;
@@ -210,17 +197,65 @@ button:hover {
 
 .floating-label-container .input:focus + .label,
 .floating-label-container .input:not(:placeholder-shown) + .label {
+  transform-origin: top left;
   top: 0;
-  left: 0px;
-  transform: translateY(-50%) scale(0.85);
+  left: 5px;
+  transform: translateY(-50%) scale(0.75);
   color: var(--color-primary);
   font-weight: 500;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius);
 }
 .floating-label-container select.input:focus + .label,
 .floating-label-container select.input:valid + .label {
+  transform-origin: top left;
   top: 0;
-  transform: translateY(-50%) scale(0.85);
+  left: 5px; /* Your custom position adjustment */
+  transform: translateY(-50%) scale(0.75);
   color: var(--color-primary);
   font-weight: 500;
-  left: 0px; /* Your custom position adjustment */
+  background-color: var(--color-background);
+  border-radius: var(--border-radius);
+}
+/* --- Add the new button classes --- */
+.button-text {
+  font-family: var(--font-family);
+  font-size: 1em;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius);
+  padding: 4px 5px;
+  box-sizing: border-box;
+  width: 100%;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-speed);
+}
+
+.button-text:hover {
+  background-color: #00c2cc;
+}
+
+.button-svg {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  transition: color var(--transition-speed);
+}
+
+.button-svg:hover {
+  color: #00c2cc; /* Lighter shade for hover */
+}
+
+.toolbar-controls {
+  display: flex;
+  gap: 8px; /* Adjust the space between buttons as needed */
+  align-items: center;
+  justify-content: space-around; /* Or 'flex-start' if you want them aligned to the left */
 }

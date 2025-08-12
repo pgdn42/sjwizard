@@ -5,6 +5,7 @@ import { Notes } from "./components/Notes";
 import { Templates } from "./components/Templates";
 import { Ticket } from "./components/Ticket";
 import { Train } from "./components/Train";
+import { Toolbar } from "./components/Toolbar";
 import "./components/modules.css";
 
 export interface FormData {
@@ -93,6 +94,13 @@ function App() {
 
   return (
     <div className="app-container">
+      <Toolbar>
+        <button className="button-text">script</button>
+        <button className="button-text">CHATT</button>
+        <button className="button-text">SAMTAL</button>
+        <button className="button-text">TCA</button>
+        <button className="button-text">TRAFIKINFO</button>
+      </Toolbar>
       <ErsattningVidForsening
         data={formData.ersattning}
         onChange={(field, value) =>
