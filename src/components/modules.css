@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 15px;
   padding: 15px;
-  max-width: 500px;
+  max-width: 580px;
   margin: 0 auto;
 }
 
@@ -200,7 +200,7 @@ textarea:focus {
   transform-origin: top left;
   top: 0;
   left: 5px;
-  transform: translateY(-50%) scale(0.75);
+  transform: translateY(-30%) scale(0.75);
   color: var(--color-primary);
   font-weight: 500;
   background-color: var(--color-background);
@@ -211,7 +211,7 @@ textarea:focus {
   transform-origin: top left;
   top: 0;
   left: 5px; /* Your custom position adjustment */
-  transform: translateY(-50%) scale(0.75);
+  transform: translateY(-30%) scale(0.75);
   color: var(--color-primary);
   font-weight: 500;
   background-color: var(--color-background);
