@@ -253,11 +253,33 @@ button {
 }
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start; /* Align items to the start */
   gap: 10px;
   margin-top: auto;
   padding-top: 15px;
   border-top: 1px solid var(--color-border);
+}
+
+.modal-actions button:last-child {
+  margin-left: auto; /* Pushes the last button (Cancel) to the far right */
+}
+/* --- NEW Styles for Template Modal --- */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Creates space between label, input, textarea */
+}
+
+.modal-form label {
+  font-weight: 500;
+  font-size: 0.9em;
+  color: var(--color-placeholder);
+}
+
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+  width: 100%;
 }
 
 /* --- Settings Modal Specific Styles --- */

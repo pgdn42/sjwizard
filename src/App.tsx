@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ErsattningVidForsening } from "./components/ErsattningVidForsening";
 import { Merkostnader } from "./components/Merkostnader";
 import { Notes } from "./components/Notes";
@@ -8,9 +8,22 @@ import { Train } from "./components/Train";
 import { Toolbar } from "./components/Toolbar";
 import { SettingsModal } from "./components/SettingsModal";
 import type { FormData, CopyConfig } from "./types";
+import { onCollectionUpdate } from "./services/firestoreService";
+import { replaceTemplateVariables } from "./utils"; // Import our new helper
 import "./components/modules.css";
 import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
+
+interface TemplateData {
+  id: string;
+  label: string;
+  content: string;
+}
+
+interface TemplateOption {
+  value: string;
+  label: string;
+}
 
 const initialFormData: FormData = {
   ersattning: {
@@ -246,41 +259,40 @@ function App() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [copyConfig, setCopyConfig] = useState<CopyConfig>(initialCopyConfig);
+  const [allTemplates, setAllTemplates] = useState<TemplateData[]>([]);
 
-  const templateOptions = [
-    { value: "delay_reason_1", label: "Förseningsorsak 1" },
-    { value: "delay_reason_2", label: "Förseningsorsak 2" },
-    { value: "delay_reason_3", label: "Förseningsorsak 3" },
-    { value: "delay_reason_4", label: "Förseningsorsak 4" },
-  ];
+  useEffect(() => {
+    const unsubscribe = onCollectionUpdate(
+      "templates",
+      null,
+      (fetchedTemplates) => {
+        const templates = fetchedTemplates.map((t) => ({
+          id: t.id,
+          label: t.label || "Untitled",
+          content: t.content || "",
+        }));
+        setAllTemplates(templates);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const templateOptions: TemplateOption[] = useMemo(() => {
+    return allTemplates.map((template) => ({
+      value: template.id,
+      label: template.label,
+    }));
+  }, [allTemplates]);
 
   const handleDataChange = (
     section: keyof FormData,
     field: string,
     value: string
   ) => {
-    if (section === "templates" && field === "selectedTemplate") {
-      const selectedTemplate = templateOptions.find(
-        (opt) => opt.value === value
-      );
-      const newContent = selectedTemplate
-        ? `Innehåll för ${selectedTemplate.label}.`
-        : "";
-
-      setFormData((prevData) => ({
-        ...prevData,
-        templates: {
-          ...prevData.templates,
-          selectedTemplate: value,
-          templateContent: newContent,
-        },
-      }));
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [section]: { ...prevData[section], [field]: value },
-      }));
-    }
+    setFormData((prevData) => ({
+      ...prevData,
+      [section]: { ...prevData[section], [field]: value },
+    }));
   };
 
   const handleClear = (section?: keyof FormData) => {
@@ -291,6 +303,29 @@ function App() {
       }));
     } else {
       setFormData(initialFormData);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const selected = allTemplates.find((t) => t.id === templateId);
+    if (selected) {
+      // 1. Replace variables in the content
+      const processedContent = replaceTemplateVariables(
+        selected.content,
+        formData
+      );
+
+      // 2. Copy the final text to the clipboard
+      navigator.clipboard.writeText(processedContent);
+
+      // 3. Update the form state to show the selected template ID and its raw content
+      setFormData((prev) => ({
+        ...prev,
+        templates: {
+          selectedTemplate: templateId,
+          templateContent: selected.content, // Show raw content in UI
+        },
+      }));
     }
   };
 
@@ -348,10 +383,10 @@ function App() {
         </div>
       </div>
       <Templates
-        data={formData.templates}
-        onChange={(field, value) => handleDataChange("templates", field, value)}
+        selectedTemplateId={formData.templates.selectedTemplate}
+        onSelectTemplate={handleTemplateSelect}
+        allTemplates={allTemplates}
         templateOptions={templateOptions}
-        onClear={() => handleClear("templates")}
       />
       <Notes
         data={formData.notes}

@@ -1,90 +1,202 @@
-import { useState } from "react";
-import CopyIcon from "../assets/copyIcon";
+import { useState, useMemo } from "react";
 import { SearchableSelect } from "./SearchableSelect";
-import TrashcanIcon from "../assets/trashcanIcon";
+import PencilIcon from "../assets/PencilIcon";
+import {
+  addDocument,
+  updateDocument,
+  deleteDocument,
+} from "../services/firestoreService";
 
+// Define the shape of a template object
+interface TemplateData {
+  id: string;
+  label: string;
+  content: string;
+}
+
+// Define the shape of the props coming into this component
 interface TemplatesProps {
-  data: {
-    selectedTemplate: string;
-    templateContent: string;
-  };
-  onChange: (field: string, value: string) => void;
-  onClear: () => void;
+  selectedTemplateId: string;
+  onSelectTemplate: (id: string) => void;
+  allTemplates: TemplateData[];
   templateOptions: { value: string; label: string }[];
 }
 
 export function Templates({
-  data,
-  onChange,
-  onClear,
+  selectedTemplateId,
+  onSelectTemplate,
+  allTemplates,
   templateOptions,
 }: TemplatesProps) {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<TemplateData | null>(
+    null
+  );
+  // State to store the original template for change detection
+  const [originalTemplate, setOriginalTemplate] = useState<TemplateData | null>(
+    null
+  );
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(data.templateContent);
+  const openModal = () => {
+    const selected = allTemplates.find((t) => t.id === selectedTemplateId);
+    const templateToEdit = selected || { id: "", label: "", content: "" };
+    setActiveTemplate(templateToEdit);
+    setOriginalTemplate(templateToEdit); // Store the original state at modal open
+    setModalOpen(true);
   };
 
-  const handleTemplateSelect = (selectedValue: string) => {
-    onChange("selectedTemplate", selectedValue);
-    const selectedTemplate = templateOptions.find(
-      (opt) => opt.value === selectedValue
-    );
-    if (selectedTemplate) {
-      // This also copies the content of the selected template to the clipboard
-      navigator.clipboard.writeText(`Innehåll för ${selectedTemplate.label}.`);
+  const handleModalSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const templateId = e.target.value;
+    if (templateId === "") {
+      const blankTemplate = { id: "", label: "", content: "" };
+      setActiveTemplate(blankTemplate);
+      setOriginalTemplate(blankTemplate);
+    } else {
+      const selected = allTemplates.find((t) => t.id === templateId);
+      if (selected) {
+        setActiveTemplate(selected);
+        setOriginalTemplate(selected); // Update original state when selection changes
+      }
     }
   };
+
+  const handleFieldChange = (field: "label" | "content", value: string) => {
+    const current = activeTemplate || { id: "", label: "", content: "" };
+    setActiveTemplate({ ...current, [field]: value });
+  };
+
+  // --- Modal Action Handlers ---
+  const handleSave = async () => {
+    if (!activeTemplate || !activeTemplate.id) {
+      alert("No template selected to save.");
+      return;
+    }
+    if (!activeTemplate.label.trim()) {
+      alert("Label cannot be empty.");
+      return;
+    }
+    const updates = {
+      label: activeTemplate.label,
+      content: activeTemplate.content,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateDocument("templates", activeTemplate.id, updates);
+    setModalOpen(false);
+  };
+
+  const handleSaveAsNew = async () => {
+    if (!activeTemplate || !activeTemplate.label.trim()) {
+      alert("Label cannot be empty to save as new.");
+      return;
+    }
+    const newTemplateData = {
+      label: activeTemplate.label,
+      content: activeTemplate.content,
+      visibility: "private",
+      ownerId: "temp-user-id", // Will be replaced by real auth
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await addDocument("templates", newTemplateData);
+    setModalOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!activeTemplate || !activeTemplate.id) return;
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${activeTemplate.label}"?`
+      )
+    ) {
+      await deleteDocument("templates", activeTemplate.id);
+      setModalOpen(false);
+    }
+  };
+
+  // --- Logic to determine if buttons should be disabled ---
+  const hasChanges = useMemo(() => {
+    if (!activeTemplate || !originalTemplate) return false;
+    // No changes if the active template has no ID (it's a new one)
+    if (!activeTemplate.id) return false;
+    return (
+      activeTemplate.label !== originalTemplate.label ||
+      activeTemplate.content !== originalTemplate.content
+    );
+  }, [activeTemplate, originalTemplate]);
+
+  const canSaveAsNew = useMemo(() => {
+    return activeTemplate?.label.trim() !== "";
+  }, [activeTemplate]);
 
   return (
     <>
       <div className="section-container">
         <div className="section-header">
-          <span>Mallar</span>
-          <div>
-            <button
-              className="button-svg"
-              title="Kopiera mall"
-              onClick={handleCopy}
-            >
-              <CopyIcon />
-            </button>
-            <button
-              className="button-svg"
-              title="Clear all fields"
-              onClick={onClear}
-            >
-              <TrashcanIcon />
-            </button>
-          </div>
+          <span>Templates</span>
+          <button
+            className="button-svg"
+            title="Edit Templates"
+            onClick={openModal}
+          >
+            <PencilIcon />
+          </button>
         </div>
         <div className="template-controls">
           <SearchableSelect
             options={templateOptions}
-            onEnter={handleTemplateSelect}
+            onEnter={onSelectTemplate}
           />
-          <button
-            onClick={() => setModalOpen(true)}
-            className="button-fixed-width"
-          >
-            Add
-          </button>
         </div>
       </div>
 
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Redigera mall</h2>
-            <textarea
-              placeholder="Mallinnehåll"
-              rows={6}
-              value={data.templateContent}
-              onChange={(e) => onChange("templateContent", e.target.value)}
-            ></textarea>
+            <h2>Edit Templates</h2>
+            <div className="modal-form">
+              <label>Select Template to Edit</label>
+              <select
+                value={activeTemplate?.id || ""}
+                onChange={handleModalSelectChange}
+              >
+                <option value="">-- New Template --</option>
+                {templateOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+
+              <label>Label</label>
+              <input
+                type="text"
+                placeholder="Template label..."
+                value={activeTemplate?.label || ""}
+                onChange={(e) => handleFieldChange("label", e.target.value)}
+              />
+
+              <label>Content</label>
+              <textarea
+                placeholder="Template content with {placeholders}..."
+                rows={8}
+                value={activeTemplate?.content || ""}
+                onChange={(e) => handleFieldChange("content", e.target.value)}
+              />
+            </div>
             <div className="modal-actions">
-              <button onClick={() => setModalOpen(false)}>Avbryt</button>
-              <button onClick={() => setModalOpen(false)}>Spara</button>
+              <button
+                onClick={handleSave}
+                disabled={!activeTemplate?.id || !hasChanges}
+              >
+                Save Changes
+              </button>
+              <button onClick={handleSaveAsNew} disabled={!canSaveAsNew}>
+                Save as New
+              </button>
+              <button onClick={handleDelete} disabled={!activeTemplate?.id}>
+                Delete
+              </button>
+              <button onClick={() => setModalOpen(false)}>Cancel</button>
             </div>
           </div>
         </div>
