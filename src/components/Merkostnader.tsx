@@ -1,6 +1,8 @@
 import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
-import CopyIcon from "../assets/CopyIcon";
+import CopyIcon from "../assets/copyIcon";
+import CopyCheckIcon from "../assets/copyCheckIcon";
+import CopyCrossIcon from "../assets/copyCrossIcon";
 
 interface MerkostnaderProps {
   data: {
@@ -17,12 +19,20 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
     <div className="section-container">
       <div className="section-header">
         <span>Merkostnader</span>
-        <button className="button-svg">
-          <CopyIcon />
-        </button>
+        <div>
+          <button className="button-svg">
+            <CopyCrossIcon />
+          </button>
+          <button className="button-svg">
+            <CopyCheckIcon />
+          </button>
+          <button className="button-svg">
+            <CopyIcon />
+          </button>
+        </div>
       </div>
       <div className="merkostnader-input-group">
-        <FloatingLabel label="Ärendenummer" className="width-medium">
+        <FloatingLabel label="Ärendenummer" className="width-large">
           <input
             type="text"
             value={data.caseNumber}
@@ -38,6 +48,17 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           >
             <option value="approved">Godkänd</option>
             <option value="denied">Nekad</option>
+          </select>
+        </FloatingLabel>
+        <FloatingLabel label="Kategori" className="width-medium">
+          <select
+            required
+            value={data.category}
+            onChange={(e) => onChange("category", e.target.value)}
+          >
+            <option value="food">Mat</option>
+            <option value="transport">Transport</option>
+            <option value="accommodation">Boende</option>
           </select>
         </FloatingLabel>
 

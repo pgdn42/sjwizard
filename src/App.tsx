@@ -50,7 +50,7 @@ function App() {
     ticket: { bookingNumber: "", cardNumber: "", cost: "" },
     merkostnader: {
       caseNumber: "",
-      category: "",
+      category: "transport",
       decision: "approved",
       compensation: "",
     },

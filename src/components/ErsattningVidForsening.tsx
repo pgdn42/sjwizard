@@ -1,6 +1,8 @@
 import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
+import CopyCheckIcon from "../assets/copyCheckIcon";
+import CopyCrossIcon from "../assets/copyCrossIcon";
 
 interface ErsattningProps {
   data: {
@@ -26,7 +28,7 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
         </button>
       </div>
       <div className="ersattning-input-group">
-        <FloatingLabel label="Ärendenummer" className="width-medium">
+        <FloatingLabel label="Ärendenummer" className="width-small-medium">
           <input
             type="text"
             value={data.caseNumber}
@@ -34,17 +36,30 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
           />
         </FloatingLabel>
         <FloatingLabel label="Beslut" className="width-small">
-          <input
-            type="text"
+          <select
+            required
             value={data.decision}
             onChange={(e) => onChange("decision", e.target.value)}
-          />
+          >
+            <option value="denied">AVSLAG</option>
+            <option value="25">25%</option>
+            <option value="50">50%</option>
+            <option value="75">75%</option>
+            <option value="100">100%</option>
+          </select>
         </FloatingLabel>
         <FloatingLabel label="Tågnummer" className="width-small">
           <input
             type="text"
             value={data.trainNumber}
             onChange={(e) => onChange("trainNumber", e.target.value)}
+          />
+        </FloatingLabel>
+        <FloatingLabel label="Avgångsdatum" className="width-small-medium">
+          <input
+            type="date"
+            value={data.departureDate}
+            onChange={(e) => onChange("departureDate", e.target.value)}
           />
         </FloatingLabel>
       </div>
@@ -63,11 +78,11 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
             onChange={(e) => onChange("arrivalStation", e.target.value)}
           />
         </FloatingLabel>
-        <FloatingLabel label="Avgångsdatum" className="width-large">
+        <FloatingLabel label="Försening" className="width-small">
           <input
-            type="date"
-            value={data.departureDate}
-            onChange={(e) => onChange("departureDate", e.target.value)}
+            type="number"
+            value={data.delay}
+            onChange={(e) => onChange("delay", e.target.value)}
           />
         </FloatingLabel>
       </div>

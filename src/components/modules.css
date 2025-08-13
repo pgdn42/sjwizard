@@ -75,6 +75,9 @@
 .width-small {
   flex: 1;
 }
+.width-small-medium {
+  flex: 1.5;
+}
 .width-medium {
   flex: 2;
 }
