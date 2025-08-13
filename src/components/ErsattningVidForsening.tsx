@@ -39,7 +39,8 @@ export function ErsattningVidForsening({
       .map((part) => {
         switch (part.type) {
           case "field":
-            return data[part.id as keyof typeof data] || "";
+            const fieldKey = part.fieldId || part.id;
+            return data[fieldKey as keyof typeof data] || "";
           case "static":
             return part.value || "";
           case "datetime":

@@ -40,58 +40,206 @@ const initialFormData: FormData = {
 };
 
 const initialCopyConfig: CopyConfig = {
-  ersattning: [
-    { id: "caseNumber", label: "Ärendenummer", type: "field", enabled: true },
-    {
-      id: "static-1",
-      label: "Static Text",
-      type: "static",
-      value: " EVF ",
-      enabled: true,
-    },
-    { id: "decision", label: "Beslut", type: "field", enabled: true },
-    {
-      id: "static-2",
-      label: "Static Text",
-      type: "static",
-      value: " TÅG ",
-      enabled: true,
-    },
-    { id: "trainNumber", label: "Tågnummer", type: "field", enabled: true },
-    {
-      id: "static-3",
-      label: "Static Text",
-      type: "static",
-      value: " ",
-      enabled: true,
-    },
-    {
-      id: "departureDate",
-      label: "Avgångsdatum",
-      type: "field",
-      enabled: true,
-    },
-    {
-      id: "static-4",
-      label: "Static Text",
-      type: "static",
-      value: " [",
-      enabled: true,
-    },
-    {
-      id: "datetime",
-      label: "Current Date/Time",
-      type: "datetime",
-      enabled: true,
-    },
-    {
-      id: "static-5",
-      label: "Static Text",
-      type: "static",
-      value: "]",
-      enabled: true,
-    },
-  ],
+  ersattning: {
+    default: [
+      {
+        id: "caseNumber-1",
+        fieldId: "caseNumber",
+        label: "Ärendenummer",
+        type: "field",
+        enabled: true,
+      },
+      {
+        id: "static-1",
+        fieldId: "static",
+        label: "Static Text",
+        type: "static",
+        value: " EVF ",
+        enabled: true,
+      },
+      {
+        id: "decision-1",
+        fieldId: "decision",
+        label: "Beslut",
+        type: "field",
+        enabled: true,
+      },
+      {
+        id: "static-2",
+        fieldId: "static",
+        label: "Static Text",
+        type: "static",
+        value: " TÅG ",
+        enabled: true,
+      },
+      {
+        id: "trainNumber-1",
+        fieldId: "trainNumber",
+        label: "Tågnummer",
+        type: "field",
+        enabled: true,
+      },
+      {
+        id: "static-3",
+        fieldId: "static",
+        label: "Static Text",
+        type: "static",
+        value: " ",
+        enabled: true,
+      },
+      {
+        id: "departureDate-1",
+        fieldId: "departureDate",
+        label: "Avgångsdatum",
+        type: "field",
+        enabled: true,
+      },
+      {
+        id: "static-4",
+        fieldId: "static",
+        label: "Static Text",
+        type: "static",
+        value: " [",
+        enabled: true,
+      },
+      {
+        id: "datetime-1",
+        fieldId: "datetime",
+        label: "Current Date/Time",
+        type: "datetime",
+        enabled: true,
+      },
+      {
+        id: "static-5",
+        fieldId: "static",
+        label: "Static Text",
+        type: "static",
+        value: "]",
+        enabled: true,
+      },
+    ],
+  },
+  merkostnader: {
+    approved: [
+      {
+        id: "static-approved-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Godkänt ärende: ",
+        enabled: true,
+      },
+      {
+        id: "caseNumber-approved-1",
+        fieldId: "caseNumber",
+        type: "field",
+        label: "Ärendenummer",
+        enabled: true,
+      },
+    ],
+    denied: [
+      {
+        id: "static-denied-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Nekat ärende: ",
+        enabled: true,
+      },
+      {
+        id: "caseNumber-denied-1",
+        fieldId: "caseNumber",
+        type: "field",
+        label: "Ärendenummer",
+        enabled: true,
+      },
+    ],
+    caseNote: [
+      {
+        id: "static-note-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Notering: ",
+        enabled: true,
+      },
+      {
+        id: "caseNumber-note-1",
+        fieldId: "caseNumber",
+        type: "field",
+        label: "Ärendenummer",
+        enabled: true,
+      },
+    ],
+  },
+  notes: {
+    trafikstorning: [
+      {
+        id: "static-trafik-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Trafikstörning: Bknr ",
+        enabled: true,
+      },
+      {
+        id: "bookingNumber-trafik-1",
+        fieldId: "bookingNumber",
+        type: "field",
+        label: "Bokningsnummer",
+        enabled: true,
+      },
+    ],
+    byteAvAvgang: [
+      {
+        id: "static-byte-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Byte av avgång: Gammalt bknr ",
+        enabled: true,
+      },
+      {
+        id: "bookingNumber-byte-1",
+        fieldId: "bookingNumber",
+        type: "field",
+        label: "Bokningsnummer",
+        enabled: true,
+      },
+      {
+        id: "static-byte-2",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: ", nytt bknr ",
+        enabled: true,
+      },
+      {
+        id: "newBookingNumber-byte-1",
+        fieldId: "newBookingNumber",
+        type: "field",
+        label: "Nytt bokningsnummer",
+        enabled: true,
+      },
+    ],
+    undantagsaterkop: [
+      {
+        id: "static-undantag-1",
+        fieldId: "static",
+        type: "static",
+        label: "Static Text",
+        value: "Undantagsåterköp: Bknr ",
+        enabled: true,
+      },
+      {
+        id: "bookingNumber-undantag-1",
+        fieldId: "bookingNumber",
+        type: "field",
+        label: "Bokningsnummer",
+        enabled: true,
+      },
+    ],
+  },
 };
 
 function App() {
@@ -175,7 +323,7 @@ function App() {
           handleDataChange("ersattning", field, value)
         }
         onClear={() => handleClear("ersattning")}
-        copyConfig={copyConfig.ersattning || []}
+        copyConfig={copyConfig.ersattning?.default || []}
       />
       <Merkostnader
         data={formData.merkostnader}
@@ -183,6 +331,7 @@ function App() {
           handleDataChange("merkostnader", field, value)
         }
         onClear={() => handleClear("merkostnader")}
+        copyConfig={copyConfig.merkostnader || {}}
       />
       <div className="row-container">
         <div className="ticket-container">
@@ -208,6 +357,7 @@ function App() {
         data={formData.notes}
         onChange={(field, value) => handleDataChange("notes", field, value)}
         onClear={() => handleClear("notes")}
+        copyConfig={copyConfig.notes || {}}
       />
       <SettingsModal
         isOpen={isSettingsOpen}

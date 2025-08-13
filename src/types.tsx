@@ -27,13 +27,20 @@ export interface FormData {
 
 export interface CopyPart {
   id: string;
+  fieldId?: string;
   label: string;
   enabled: boolean;
   type: "field" | "static" | "datetime";
   value?: string; // For static text
 }
 
+export type CopyTemplate = CopyPart[];
+
+export type ModuleCopyConfig = {
+  [templateName: string]: CopyTemplate;
+};
+
 export type CopyConfig = {
   // Using Partial to make modules optional, so we can add them one by one
-  [K in keyof Partial<FormData>]?: CopyPart[];
+  [K in keyof Partial<FormData>]?: ModuleCopyConfig;
 };

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -12,40 +12,167 @@ import type { CopyConfig, CopyPart } from "../types";
 // --- Data ---
 const moduleNames: { [key: string]: string } = {
   ersattning: "Ersättning vid försening",
+  merkostnader: "Merkostnader",
+  ticket: "Biljett",
+  notes: "Noteringar",
+};
+
+const templateNamesByModule: { [key: string]: { [key: string]: string } } = {
+  ersattning: {
+    default: "Default",
+  },
+  merkostnader: {
+    approved: "Approved Claim",
+    denied: "Denied Claim",
+    caseNote: "Case Note",
+  },
+  ticket: {
+    default: "Default",
+  },
+  notes: {
+    trafikstorning: "Trafikstörning",
+    byteAvAvgang: "Byte av avgång",
+    undantagsaterkop: "Undantagsåterköp",
+  },
 };
 
 const placeholderData: { [key: string]: any } = {
-  caseNumber: "1-23456789",
-  decision: "100%",
-  trainNumber: "42",
-  departureDate: "2025-08-13",
+  ersattning: {
+    caseNumber: "1-23456789",
+    decision: "50%",
+    trainNumber: "42",
+    departureDate: "2025-08-13",
+    departureStation: "Stockholm C",
+    arrivalStation: "Göteborg C",
+    delay: "65",
+    producer: "SJ",
+  },
+  merkostnader: {
+    caseNumber: "1-98765432",
+    category: "Mat",
+    decision: "Godkänd",
+    compensation: "150",
+  },
+  ticket: {
+    bookingNumber: "ABC1234",
+    cardNumber: "1234",
+    cost: "599",
+  },
+  notes: {
+    bookingNumber: "XYZ987",
+    newBookingNumber: "NEW567",
+    extraNote: "Extra info",
+    notesContent: "This is a note.",
+  },
 };
 
-const allModuleParts: { [key: string]: CopyPart } = {
-  caseNumber: {
-    id: "caseNumber",
-    label: "Ärendenummer",
-    type: "field",
-    enabled: true,
+const allModuleParts: { [key: string]: { [id: string]: CopyPart } } = {
+  ersattning: {
+    caseNumber: {
+      id: "caseNumber",
+      label: "Ärendenummer",
+      type: "field",
+      enabled: true,
+    },
+    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
+    trainNumber: {
+      id: "trainNumber",
+      label: "Tågnummer",
+      type: "field",
+      enabled: true,
+    },
+    departureDate: {
+      id: "departureDate",
+      label: "Avgångsdatum",
+      type: "field",
+      enabled: true,
+    },
+    departureStation: {
+      id: "departureStation",
+      label: "Avgångsstation",
+      type: "field",
+      enabled: true,
+    },
+    arrivalStation: {
+      id: "arrivalStation",
+      label: "Ankomststation",
+      type: "field",
+      enabled: true,
+    },
+    delay: { id: "delay", label: "Försening", type: "field", enabled: true },
+    producer: {
+      id: "producer",
+      label: "Producent",
+      type: "field",
+      enabled: true,
+    },
+    datetime: {
+      id: "datetime",
+      label: "Current Date/Time",
+      type: "datetime",
+      enabled: true,
+    },
   },
-  decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
-  trainNumber: {
-    id: "trainNumber",
-    label: "Tågnummer",
-    type: "field",
-    enabled: true,
+  merkostnader: {
+    caseNumber: {
+      id: "caseNumber",
+      label: "Ärendenummer",
+      type: "field",
+      enabled: true,
+    },
+    category: {
+      id: "category",
+      label: "Kategori",
+      type: "field",
+      enabled: true,
+    },
+    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
+    compensation: {
+      id: "compensation",
+      label: "Ersättning",
+      type: "field",
+      enabled: true,
+    },
   },
-  departureDate: {
-    id: "departureDate",
-    label: "Avgångsdatum",
-    type: "field",
-    enabled: true,
+  ticket: {
+    bookingNumber: {
+      id: "bookingNumber",
+      label: "Bokningsnummer",
+      type: "field",
+      enabled: true,
+    },
+    cardNumber: {
+      id: "cardNumber",
+      label: "Kortnummer",
+      type: "field",
+      enabled: true,
+    },
+    cost: {
+      id: "cost",
+      label: "Beställningsnummer",
+      type: "field",
+      enabled: true,
+    },
   },
-  datetime: {
-    id: "datetime",
-    label: "Current Date/Time",
-    type: "datetime",
-    enabled: true,
+  notes: {
+    bookingNumber: {
+      id: "bookingNumber",
+      label: "Bokningsnummer",
+      type: "field",
+      enabled: true,
+    },
+    newBookingNumber: {
+      id: "newBookingNumber",
+      label: "Nytt bokningsnummer",
+      type: "field",
+      enabled: true,
+    },
+    extraNote: {
+      id: "extraNote",
+      label: "Extra notering",
+      type: "field",
+      enabled: true,
+    },
   },
 };
 // --- End Data ---
@@ -66,23 +193,37 @@ export function SettingsModal({
   const [internalConfig, setInternalConfig] = useState<CopyConfig>(copyConfig);
   const [selectedModule, setSelectedModule] =
     useState<keyof CopyConfig>("ersattning");
+  const [selectedTemplate, setSelectedTemplate] = useState("default");
   const [partToAdd, setPartToAdd] = useState<string>("static");
 
-  const currentModuleConfig = useMemo(
-    () => internalConfig[selectedModule] || [],
-    [internalConfig, selectedModule]
+  // FIX: Sync internal state with props when the modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setInternalConfig(copyConfig);
+    }
+  }, [copyConfig, isOpen]);
+
+  useEffect(() => {
+    const availableTemplates = Object.keys(
+      templateNamesByModule[selectedModule] || {}
+    );
+    setSelectedTemplate(availableTemplates[0] || "");
+  }, [selectedModule]);
+
+  const currentTemplateConfig = useMemo(
+    () => internalConfig[selectedModule]?.[selectedTemplate] || [],
+    [internalConfig, selectedModule, selectedTemplate]
   );
+
   const itemIds = useMemo(
-    () => currentModuleConfig.map((item) => item.id),
-    [currentModuleConfig]
+    () => currentTemplateConfig.map((item) => item.id),
+    [currentTemplateConfig]
   );
 
   const availablePartsToAdd = useMemo(() => {
-    const currentPartIds = new Set(currentModuleConfig.map((p) => p.id));
-    return Object.values(allModuleParts).filter(
-      (p) => !currentPartIds.has(p.id)
-    );
-  }, [currentModuleConfig]);
+    const partsForModule = allModuleParts[selectedModule] || {};
+    return Object.values(partsForModule);
+  }, [selectedModule]);
 
   const previewText = useMemo(() => {
     const now = new Date();
@@ -93,12 +234,18 @@ export function SettingsModal({
       .toString()
       .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
-    return currentModuleConfig
+    const modulePlaceholders = placeholderData[selectedModule] || {};
+
+    return currentTemplateConfig
       .filter((part) => part.enabled)
       .map((part) => {
         switch (part.type) {
           case "field":
-            return placeholderData[part.id] || `[${part.label}]`;
+            const fieldKey = part.fieldId || part.id;
+            return (
+              modulePlaceholders[fieldKey as keyof typeof modulePlaceholders] ||
+              `[${part.label}]`
+            );
           case "static":
             return part.value || "";
           case "datetime":
@@ -108,7 +255,7 @@ export function SettingsModal({
         }
       })
       .join("");
-  }, [currentModuleConfig]);
+  }, [currentTemplateConfig, selectedModule]);
 
   if (!isOpen) return null;
 
@@ -118,24 +265,30 @@ export function SettingsModal({
       const oldIndex = itemIds.indexOf(active.id as string);
       const newIndex = itemIds.indexOf(over.id as string);
       const newOrderedConfig = arrayMove(
-        currentModuleConfig,
+        currentTemplateConfig,
         oldIndex,
         newIndex
       );
       setInternalConfig((prev) => ({
         ...prev,
-        [selectedModule]: newOrderedConfig,
+        [selectedModule]: {
+          ...(prev[selectedModule] || {}),
+          [selectedTemplate]: newOrderedConfig,
+        },
       }));
     }
   };
 
   const handlePartChange = (partId: string, newPart: Partial<CopyPart>) => {
-    const newModuleConfig = currentModuleConfig.map((p) =>
+    const newModuleConfig = currentTemplateConfig.map((p) =>
       p.id === partId ? { ...p, ...newPart } : p
     );
     setInternalConfig({
       ...internalConfig,
-      [selectedModule]: newModuleConfig,
+      [selectedModule]: {
+        ...(internalConfig[selectedModule] || {}),
+        [selectedTemplate]: newModuleConfig,
+      },
     });
   };
 
@@ -146,22 +299,33 @@ export function SettingsModal({
     if (partToAdd === "static") {
       newPart = {
         id: `static-${Date.now()}`,
+        fieldId: "static",
         label: "Static Text",
         type: "static",
         value: " ",
         enabled: true,
       };
     } else {
-      const partTemplate = allModuleParts[partToAdd];
+      const partTemplate = allModuleParts[selectedModule]?.[partToAdd];
       if (partTemplate) {
-        newPart = { ...partTemplate };
+        newPart = {
+          ...partTemplate,
+          id: `${partTemplate.id}-${Date.now()}`,
+          fieldId: partTemplate.id,
+        };
       }
     }
 
     if (newPart) {
       setInternalConfig((prev) => ({
         ...prev,
-        [selectedModule]: [...(prev[selectedModule] || []), newPart],
+        [selectedModule]: {
+          ...(prev[selectedModule] || {}),
+          [selectedTemplate]: [
+            ...(prev[selectedModule]?.[selectedTemplate] || []),
+            newPart,
+          ],
+        },
       }));
     }
   };
@@ -169,9 +333,12 @@ export function SettingsModal({
   const handleDeletePart = (partId: string) => {
     setInternalConfig((prev) => ({
       ...prev,
-      [selectedModule]: (prev[selectedModule] || []).filter(
-        (p) => p.id !== partId
-      ),
+      [selectedModule]: {
+        ...(prev[selectedModule] || {}),
+        [selectedTemplate]: (
+          prev[selectedModule]?.[selectedTemplate] || []
+        ).filter((p) => p.id !== partId),
+      },
     }));
   };
 
@@ -187,18 +354,35 @@ export function SettingsModal({
 
         <div className="settings-section">
           <h4>Configure Copy Templates</h4>
-          <select
-            value={selectedModule}
-            onChange={(e) =>
-              setSelectedModule(e.target.value as keyof CopyConfig)
-            }
-          >
-            {Object.keys(moduleNames).map((key) => (
-              <option key={key} value={key}>
-                {moduleNames[key]}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <select
+              style={{ flex: 1 }}
+              value={selectedModule}
+              onChange={(e) =>
+                setSelectedModule(e.target.value as keyof CopyConfig)
+              }
+            >
+              {Object.keys(moduleNames).map((key) => (
+                <option key={key} value={key}>
+                  {moduleNames[key]}
+                </option>
+              ))}
+            </select>
+
+            <select
+              style={{ flex: 1 }}
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+            >
+              {Object.entries(templateNamesByModule[selectedModule] || {}).map(
+                ([key, name]) => (
+                  <option key={key} value={key}>
+                    {name}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
 
           <div className="settings-preview">
             <label>Live Preview</label>
@@ -215,7 +399,7 @@ export function SettingsModal({
               items={itemIds}
               strategy={verticalListSortingStrategy}
             >
-              {currentModuleConfig.map((part) => (
+              {currentTemplateConfig.map((part) => (
                 <SortableItem
                   key={part.id}
                   part={part}

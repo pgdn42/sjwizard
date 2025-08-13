@@ -3,6 +3,7 @@ import CopyIcon from "../assets/copyIcon";
 import CopyCheckIcon from "../assets/copyCheckIcon";
 import CopyCrossIcon from "../assets/copyCrossIcon";
 import TrashcanIcon from "../assets/trashcanIcon";
+import type { ModuleCopyConfig, CopyPart } from "../types";
 
 interface MerkostnaderProps {
   data: {
@@ -13,21 +14,80 @@ interface MerkostnaderProps {
   };
   onChange: (field: string, value: string) => void;
   onClear: () => void;
+  copyConfig: ModuleCopyConfig;
 }
 
-export function Merkostnader({ data, onChange, onClear }: MerkostnaderProps) {
+function generateCopyText(
+  template: CopyPart[],
+  data: MerkostnaderProps["data"]
+): string {
+  const now = new Date();
+  const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
+    .getHours()
+    .toString()
+    .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+  return template
+    .filter((part) => part.enabled)
+    .map((part) => {
+      switch (part.type) {
+        case "field":
+          const fieldKey = part.fieldId || part.id;
+          return data[fieldKey as keyof typeof data] || "";
+        case "static":
+          return part.value || "";
+        case "datetime":
+          return formattedDateTime;
+        default:
+          return "";
+      }
+    })
+    .join("");
+}
+
+export function Merkostnader({
+  data,
+  onChange,
+  onClear,
+  copyConfig,
+}: MerkostnaderProps) {
+  const handleCopy = (templateName: keyof ModuleCopyConfig) => {
+    const template = copyConfig[templateName];
+    if (!template) return;
+
+    const textToCopy = generateCopyText(template, data);
+    navigator.clipboard.writeText(textToCopy);
+  };
+
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Merkostnader</span>
         <div>
-          <button className="button-svg">
-            <CopyCrossIcon />
-          </button>
-          <button className="button-svg">
-            <CopyCheckIcon />
-          </button>
-          <button className="button-svg">
+          {data.decision === "denied" ? (
+            <button
+              className="button-svg"
+              title="Copy Denied"
+              onClick={() => handleCopy("denied")}
+            >
+              <CopyCrossIcon />
+            </button>
+          ) : (
+            <button
+              className="button-svg"
+              title="Copy Approved"
+              onClick={() => handleCopy("approved")}
+            >
+              <CopyCheckIcon />
+            </button>
+          )}
+          <button
+            className="button-svg"
+            title="Copy Case Note"
+            onClick={() => handleCopy("caseNote")}
+          >
             <CopyIcon />
           </button>
           <button
