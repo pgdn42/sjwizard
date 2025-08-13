@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import CopyIcon from "../assets/copyIcon";
+import { SearchableSelect } from "./SearchableSelect";
+import TrashcanIcon from "../assets/trashcanIcon";
 
 interface TemplatesProps {
   data: {
@@ -7,30 +9,51 @@ interface TemplatesProps {
     templateContent: string;
   };
   onChange: (field: string, value: string) => void;
+  templateOptions: { value: string; label: string }[];
 }
 
-export function Templates({ data, onChange }: TemplatesProps) {
+export function Templates({ data, onChange, templateOptions }: TemplatesProps) {
   const [isModalOpen, setModalOpen] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(data.templateContent);
+  };
+
+  const handleTemplateSelect = (selectedValue: string) => {
+    onChange("selectedTemplate", selectedValue);
+    const selectedTemplate = templateOptions.find(
+      (opt) => opt.value === selectedValue
+    );
+    if (selectedTemplate) {
+      navigator.clipboard.writeText(`Innehåll för ${selectedTemplate.label}.`);
+    }
+  };
 
   return (
     <>
       <div className="section-container">
         <div className="section-header">
           <span>Mallar</span>
-          <button className="button-svg" title="Kopiera mall">
-            <CopyIcon />
-          </button>
+          <div>
+            <button
+              className="button-svg"
+              title="Kopiera mall"
+              onClick={handleCopy}
+            >
+              <CopyIcon />
+            </button>
+            <button className="button-svg" title="Clear all fields">
+              <TrashcanIcon />
+            </button>
+          </div>
         </div>
         <div className="template-controls">
-          <select
+          <SearchableSelect
+            options={templateOptions}
             value={data.selectedTemplate}
-            onChange={(e) => onChange("selectedTemplate", e.target.value)}
-            className="template-select"
-          >
-            <option value="">Välj en mall...</option>
-            <option value="delay_reason_1">Förseningsorsak 1</option>
-            <option value="delay_reason_2">Förseningsorsak 2</option>
-          </select>
+            onChange={(value) => onChange("selectedTemplate", value)}
+            onEnter={handleTemplateSelect}
+          />
           <button
             onClick={() => setModalOpen(true)}
             className="button-fixed-width"

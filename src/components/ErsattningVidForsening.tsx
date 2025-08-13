@@ -3,6 +3,7 @@ import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
 import CopyCheckIcon from "../assets/copyCheckIcon";
 import CopyCrossIcon from "../assets/copyCrossIcon";
+import TrashcanIcon from "../assets/trashcanIcon";
 
 interface ErsattningProps {
   data: {
@@ -23,9 +24,14 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
     <div className="section-container">
       <div className="section-header">
         <span>Ersättning vid försening</span>
-        <button className="button-svg" title="Kopiera försening mall">
-          <CopyIcon />
-        </button>
+        <div>
+          <button className="button-svg" title="Kopiera försening mall">
+            <CopyIcon />
+          </button>
+          <button className="button-svg" title="Clear all fields">
+            <TrashcanIcon />
+          </button>
+        </div>
       </div>
       <div className="ersattning-input-group">
         <FloatingLabel label="Ärendenummer" className="width-small-medium">
@@ -78,7 +84,7 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
             onChange={(e) => onChange("arrivalStation", e.target.value)}
           />
         </FloatingLabel>
-        <FloatingLabel label="Försening" className="width-small">
+        <FloatingLabel label="Försening" className="width-small-medium">
           <input
             type="number"
             value={data.delay}

@@ -262,3 +262,35 @@ textarea:focus {
   align-items: center;
   justify-content: space-around; /* Or 'flex-start' if you want them aligned to the left */
 }
+/* --- Searchable Select Styles --- */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+.searchable-select-dropdown {
+  position: absolute;
+  width: 100%;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  max-height: 150px;
+  overflow-y: auto;
+  list-style-type: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+  z-index: 10;
+}
+.searchable-select-dropdown li {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.searchable-select-dropdown li:hover,
+.searchable-select-dropdown li.highlighted {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+.searchable-select-dropdown li.no-options {
+  padding: 8px 10px;
+  color: var(--color-placeholder);
+  cursor: default;
+}

@@ -1,6 +1,7 @@
 import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
+import TrashcanIcon from "../assets/trashcanIcon";
 
 interface NotesProps {
   data: {
@@ -17,18 +18,23 @@ export function Notes({ data, onChange }: NotesProps) {
     <div className="section-container">
       <div className="section-header">
         <span>Noteringar</span>
-        <button className="button-svg" title="Kopiera trafikstörning">
-          Trafikstörning
-          <CopyIcon />
-        </button>
-        <button className="button-svg" title="Kopiera byte av avgång">
-          Byte av avgång
-          <CopyIcon />
-        </button>
-        <button className="button-svg" title="Kopiera undantag">
-          Undantagsåterköp
-          <CopyIcon />
-        </button>
+        <div>
+          <button className="button-svg" title="Kopiera trafikstörning">
+            Trafikstörning
+            <CopyIcon />
+          </button>
+          <button className="button-svg" title="Kopiera byte av avgång">
+            Byte av avgång
+            <CopyIcon />
+          </button>
+          <button className="button-svg" title="Kopiera undantag">
+            Undantagsåterköp
+            <CopyIcon />
+          </button>
+          <button className="button-svg" title="Clear all fields">
+            <TrashcanIcon />
+          </button>
+        </div>
       </div>
       <div className="notes-input-group">
         <FloatingLabel label="Bokningsnummer">

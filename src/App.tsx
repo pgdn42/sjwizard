@@ -50,7 +50,7 @@ function App() {
     ticket: { bookingNumber: "", cardNumber: "", cost: "" },
     merkostnader: {
       caseNumber: "",
-      category: "transport",
+      category: "",
       decision: "approved",
       compensation: "",
     },
@@ -63,6 +63,13 @@ function App() {
     },
   });
 
+  const templateOptions = [
+    { value: "delay_reason_1", label: "Förseningsorsak 1" },
+    { value: "delay_reason_2", label: "Förseningsorsak 2" },
+    { value: "delay_reason_3", label: "Förseningsorsak 3" },
+    { value: "delay_reason_4", label: "Förseningsorsak 4" },
+  ];
+
   const handleDataChange = (
     section: keyof FormData,
     field: string,
@@ -70,12 +77,13 @@ function App() {
   ) => {
     // A little logic to update the content when a template is selected
     if (section === "templates" && field === "selectedTemplate") {
-      const newContent =
-        value === "delay_reason_1"
-          ? "Innehåll för förseningsorsak 1."
-          : value === "delay_reason_2"
-          ? "Innehåll för förseningsorsak 2."
-          : "";
+      const selectedTemplate = templateOptions.find(
+        (opt) => opt.value === value
+      );
+      const newContent = selectedTemplate
+        ? `Innehåll för ${selectedTemplate.label}.`
+        : "";
+
       setFormData((prevData) => ({
         ...prevData,
         templates: {
@@ -129,6 +137,7 @@ function App() {
       <Templates
         data={formData.templates}
         onChange={(field, value) => handleDataChange("templates", field, value)}
+        templateOptions={templateOptions}
       />
       <Notes
         data={formData.notes}

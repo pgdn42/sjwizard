@@ -3,6 +3,7 @@ import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
 import CopyCheckIcon from "../assets/copyCheckIcon";
 import CopyCrossIcon from "../assets/copyCrossIcon";
+import TrashcanIcon from "../assets/trashcanIcon";
 
 interface MerkostnaderProps {
   data: {
@@ -28,6 +29,9 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           </button>
           <button className="button-svg">
             <CopyIcon />
+          </button>
+          <button className="button-svg" title="Clear all fields">
+            <TrashcanIcon />
           </button>
         </div>
       </div>
