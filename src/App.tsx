@@ -8,6 +8,8 @@ import { Train } from "./components/Train";
 import { Toolbar } from "./components/Toolbar";
 import "./components/modules.css";
 
+import TrashcanIcon from "./assets/trashcanIcon";
+
 export interface FormData {
   ersattning: {
     caseNumber: string;
@@ -108,6 +110,9 @@ function App() {
         <button className="button-text">SAMTAL</button>
         <button className="button-text">TCA</button>
         <button className="button-text">TRAFIKINFO</button>
+        <button className="button-svg" title="Clear all fields">
+          <TrashcanIcon />
+        </button>
       </Toolbar>
       <ErsattningVidForsening
         data={formData.ersattning}
