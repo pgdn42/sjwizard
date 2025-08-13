@@ -1,4 +1,3 @@
-import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
 import CopyCheckIcon from "../assets/copyCheckIcon";
@@ -13,9 +12,10 @@ interface MerkostnaderProps {
     compensation: string;
   };
   onChange: (field: string, value: string) => void;
+  onClear: () => void;
 }
 
-export function Merkostnader({ data, onChange }: MerkostnaderProps) {
+export function Merkostnader({ data, onChange, onClear }: MerkostnaderProps) {
   return (
     <div className="section-container">
       <div className="section-header">
@@ -30,7 +30,11 @@ export function Merkostnader({ data, onChange }: MerkostnaderProps) {
           <button className="button-svg">
             <CopyIcon />
           </button>
-          <button className="button-svg" title="Clear all fields">
+          <button
+            className="button-svg"
+            title="Clear all fields"
+            onClick={onClear}
+          >
             <TrashcanIcon />
           </button>
         </div>

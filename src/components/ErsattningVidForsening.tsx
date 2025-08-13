@@ -1,9 +1,7 @@
-import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
-import CopyCheckIcon from "../assets/copyCheckIcon";
-import CopyCrossIcon from "../assets/copyCrossIcon";
 import TrashcanIcon from "../assets/trashcanIcon";
+import type { CopyPart } from "../types";
 
 interface ErsattningProps {
   data: {
@@ -17,18 +15,61 @@ interface ErsattningProps {
     producer: string;
   };
   onChange: (field: string, value: string) => void;
+  onClear: () => void;
+  copyConfig: CopyPart[];
 }
 
-export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
+export function ErsattningVidForsening({
+  data,
+  onChange,
+  onClear,
+  copyConfig,
+}: ErsattningProps) {
+  const handleCopy = () => {
+    const now = new Date();
+    const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+    const copyText = copyConfig
+      .filter((part) => part.enabled)
+      .map((part) => {
+        switch (part.type) {
+          case "field":
+            return data[part.id as keyof typeof data] || "";
+          case "static":
+            return part.value || "";
+          case "datetime":
+            return formattedDateTime;
+          default:
+            return "";
+        }
+      })
+      .join("");
+
+    navigator.clipboard.writeText(copyText);
+  };
+
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Ersättning vid försening</span>
         <div>
-          <button className="button-svg" title="Kopiera försening mall">
+          <button
+            className="button-svg"
+            title="Kopiera försening mall"
+            onClick={handleCopy}
+          >
             <CopyIcon />
           </button>
-          <button className="button-svg" title="Clear all fields">
+          <button
+            className="button-svg"
+            title="Clear all fields"
+            onClick={onClear}
+          >
             <TrashcanIcon />
           </button>
         </div>
@@ -47,11 +88,11 @@ export function ErsattningVidForsening({ data, onChange }: ErsattningProps) {
             value={data.decision}
             onChange={(e) => onChange("decision", e.target.value)}
           >
-            <option value="denied">AVSLAG</option>
-            <option value="25">25%</option>
-            <option value="50">50%</option>
-            <option value="75">75%</option>
-            <option value="100">100%</option>
+            <option value="AVSLAG">AVSLAG</option>
+            <option value="25%">25%</option>
+            <option value="50%">50%</option>
+            <option value="75%">75%</option>
+            <option value="100%">100%</option>
           </select>
         </FloatingLabel>
         <FloatingLabel label="Tågnummer" className="width-small">

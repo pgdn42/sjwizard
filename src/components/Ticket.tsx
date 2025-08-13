@@ -1,4 +1,3 @@
-import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import TrashcanIcon from "../assets/trashcanIcon";
 
@@ -9,14 +8,19 @@ interface TicketProps {
     cost: string;
   };
   onChange: (field: string, value: string) => void;
+  onClear: () => void;
 }
 
-export function Ticket({ data, onChange }: TicketProps) {
+export function Ticket({ data, onChange, onClear }: TicketProps) {
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Biljett</span>
-        <button className="button-svg" title="Clear all fields">
+        <button
+          className="button-svg"
+          title="Clear all fields"
+          onClick={onClear}
+        >
           <TrashcanIcon />
         </button>
       </div>

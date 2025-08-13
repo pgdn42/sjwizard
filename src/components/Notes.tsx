@@ -1,4 +1,3 @@
-import React from "react";
 import { FloatingLabel } from "./FloatingLabel";
 import CopyIcon from "../assets/copyIcon";
 import TrashcanIcon from "../assets/trashcanIcon";
@@ -11,9 +10,10 @@ interface NotesProps {
     notesContent: string;
   };
   onChange: (field: string, value: string) => void;
+  onClear: () => void;
 }
 
-export function Notes({ data, onChange }: NotesProps) {
+export function Notes({ data, onChange, onClear }: NotesProps) {
   return (
     <div className="section-container">
       <div className="section-header">
@@ -31,7 +31,11 @@ export function Notes({ data, onChange }: NotesProps) {
             Undantagsåterköp
             <CopyIcon />
           </button>
-          <button className="button-svg" title="Clear all fields">
+          <button
+            className="button-svg"
+            title="Clear all fields"
+            onClick={onClear}
+          >
             <TrashcanIcon />
           </button>
         </div>

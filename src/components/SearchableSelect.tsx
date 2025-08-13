@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Option {
   value: string;
@@ -7,17 +7,10 @@ interface Option {
 
 interface SearchableSelectProps {
   options: Option[];
-  value: string;
-  onChange: (value: string) => void;
   onEnter: (value: string) => void;
 }
 
-export function SearchableSelect({
-  options,
-  value,
-  onChange,
-  onEnter,
-}: SearchableSelectProps) {
+export function SearchableSelect({ options, onEnter }: SearchableSelectProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredOptions, setFilteredOptions] = useState<Option[]>(options);
   const [highlightedIndex, setHighlightedIndex] = useState(0);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ErsattningVidForsening } from "./components/ErsattningVidForsening";
 import { Merkostnader } from "./components/Merkostnader";
 import { Notes } from "./components/Notes";
@@ -6,64 +6,98 @@ import { Templates } from "./components/Templates";
 import { Ticket } from "./components/Ticket";
 import { Train } from "./components/Train";
 import { Toolbar } from "./components/Toolbar";
+import { SettingsModal } from "./components/SettingsModal";
+import type { FormData, CopyConfig } from "./types";
 import "./components/modules.css";
-
 import TrashcanIcon from "./assets/trashcanIcon";
+import SettingsIcon from "./assets/settingsIcon";
 
-export interface FormData {
+const initialFormData: FormData = {
   ersattning: {
-    caseNumber: string;
-    decision: string;
-    trainNumber: string;
-    departureDate: string;
-    departureStation: string;
-    arrivalStation: string;
-    delay: string;
-    producer: string;
-  };
-  ticket: { bookingNumber: string; cardNumber: string; cost: string };
+    caseNumber: "",
+    decision: "AVSLAG",
+    trainNumber: "",
+    departureDate: "2025-08-12",
+    departureStation: "",
+    arrivalStation: "",
+    delay: "",
+    producer: "",
+  },
+  ticket: { bookingNumber: "", cardNumber: "", cost: "" },
   merkostnader: {
-    caseNumber: string;
-    category: string;
-    decision: string;
-    compensation: string;
-  };
-  templates: { selectedTemplate: string; templateContent: string };
+    caseNumber: "",
+    category: "",
+    decision: "approved",
+    compensation: "",
+  },
+  templates: { selectedTemplate: "", templateContent: "" },
   notes: {
-    bookingNumber: string;
-    newBookingNumber: string;
-    extraNote: string;
-    notesContent: string;
-  };
-}
+    bookingNumber: "",
+    newBookingNumber: "",
+    extraNote: "",
+    notesContent: "",
+  },
+};
+
+const initialCopyConfig: CopyConfig = {
+  ersattning: [
+    { id: "caseNumber", label: "Ärendenummer", type: "field", enabled: true },
+    {
+      id: "static-1",
+      label: "Static Text",
+      type: "static",
+      value: " EVF ",
+      enabled: true,
+    },
+    { id: "decision", label: "Beslut", type: "field", enabled: true },
+    {
+      id: "static-2",
+      label: "Static Text",
+      type: "static",
+      value: " TÅG ",
+      enabled: true,
+    },
+    { id: "trainNumber", label: "Tågnummer", type: "field", enabled: true },
+    {
+      id: "static-3",
+      label: "Static Text",
+      type: "static",
+      value: " ",
+      enabled: true,
+    },
+    {
+      id: "departureDate",
+      label: "Avgångsdatum",
+      type: "field",
+      enabled: true,
+    },
+    {
+      id: "static-4",
+      label: "Static Text",
+      type: "static",
+      value: " [",
+      enabled: true,
+    },
+    {
+      id: "datetime",
+      label: "Current Date/Time",
+      type: "datetime",
+      enabled: true,
+    },
+    {
+      id: "static-5",
+      label: "Static Text",
+      type: "static",
+      value: "]",
+      enabled: true,
+    },
+  ],
+};
 
 function App() {
-  const [formData, setFormData] = useState<FormData>({
-    ersattning: {
-      caseNumber: "",
-      decision: "",
-      trainNumber: "",
-      departureDate: "2025-08-12",
-      departureStation: "",
-      arrivalStation: "",
-      delay: "",
-      producer: "",
-    },
-    ticket: { bookingNumber: "", cardNumber: "", cost: "" },
-    merkostnader: {
-      caseNumber: "",
-      category: "",
-      decision: "approved",
-      compensation: "",
-    },
-    templates: { selectedTemplate: "", templateContent: "" },
-    notes: {
-      bookingNumber: "",
-      newBookingNumber: "",
-      extraNote: "",
-      notesContent: "",
-    },
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [copyConfig, setCopyConfig] = useState<CopyConfig>(initialCopyConfig);
 
   const templateOptions = [
     { value: "delay_reason_1", label: "Förseningsorsak 1" },
@@ -77,7 +111,6 @@ function App() {
     field: string,
     value: string
   ) => {
-    // A little logic to update the content when a template is selected
     if (section === "templates" && field === "selectedTemplate") {
       const selectedTemplate = templateOptions.find(
         (opt) => opt.value === value
@@ -102,6 +135,17 @@ function App() {
     }
   };
 
+  const handleClear = (section?: keyof FormData) => {
+    if (section) {
+      setFormData((prevData) => ({
+        ...prevData,
+        [section]: initialFormData[section],
+      }));
+    } else {
+      setFormData(initialFormData);
+    }
+  };
+
   return (
     <div className="app-container">
       <Toolbar>
@@ -110,7 +154,18 @@ function App() {
         <button className="button-text">SAMTAL</button>
         <button className="button-text">TCA</button>
         <button className="button-text">TRAFIKINFO</button>
-        <button className="button-svg" title="Clear all fields">
+        <button
+          className="button-svg"
+          title="Settings"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <SettingsIcon />
+        </button>
+        <button
+          className="button-svg"
+          title="Clear all fields"
+          onClick={() => handleClear()}
+        >
           <TrashcanIcon />
         </button>
       </Toolbar>
@@ -119,12 +174,15 @@ function App() {
         onChange={(field, value) =>
           handleDataChange("ersattning", field, value)
         }
+        onClear={() => handleClear("ersattning")}
+        copyConfig={copyConfig.ersattning || []}
       />
       <Merkostnader
         data={formData.merkostnader}
         onChange={(field, value) =>
           handleDataChange("merkostnader", field, value)
         }
+        onClear={() => handleClear("merkostnader")}
       />
       <div className="row-container">
         <div className="ticket-container">
@@ -133,6 +191,7 @@ function App() {
             onChange={(field, value) =>
               handleDataChange("ticket", field, value)
             }
+            onClear={() => handleClear("ticket")}
           />
         </div>
         <div className="train-container">
@@ -143,10 +202,18 @@ function App() {
         data={formData.templates}
         onChange={(field, value) => handleDataChange("templates", field, value)}
         templateOptions={templateOptions}
+        onClear={() => handleClear("templates")}
       />
       <Notes
         data={formData.notes}
         onChange={(field, value) => handleDataChange("notes", field, value)}
+        onClear={() => handleClear("notes")}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        copyConfig={copyConfig}
+        onSave={(newConfig) => setCopyConfig(newConfig)}
       />
     </div>
   );

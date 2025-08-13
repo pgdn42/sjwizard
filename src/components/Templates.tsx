@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import CopyIcon from "../assets/copyIcon";
 import { SearchableSelect } from "./SearchableSelect";
 import TrashcanIcon from "../assets/trashcanIcon";
@@ -9,10 +9,16 @@ interface TemplatesProps {
     templateContent: string;
   };
   onChange: (field: string, value: string) => void;
+  onClear: () => void;
   templateOptions: { value: string; label: string }[];
 }
 
-export function Templates({ data, onChange, templateOptions }: TemplatesProps) {
+export function Templates({
+  data,
+  onChange,
+  onClear,
+  templateOptions,
+}: TemplatesProps) {
   const [isModalOpen, setModalOpen] = useState(false);
 
   const handleCopy = () => {
@@ -25,6 +31,7 @@ export function Templates({ data, onChange, templateOptions }: TemplatesProps) {
       (opt) => opt.value === selectedValue
     );
     if (selectedTemplate) {
+      // This also copies the content of the selected template to the clipboard
       navigator.clipboard.writeText(`Innehåll för ${selectedTemplate.label}.`);
     }
   };
@@ -42,7 +49,11 @@ export function Templates({ data, onChange, templateOptions }: TemplatesProps) {
             >
               <CopyIcon />
             </button>
-            <button className="button-svg" title="Clear all fields">
+            <button
+              className="button-svg"
+              title="Clear all fields"
+              onClick={onClear}
+            >
               <TrashcanIcon />
             </button>
           </div>
@@ -50,8 +61,6 @@ export function Templates({ data, onChange, templateOptions }: TemplatesProps) {
         <div className="template-controls">
           <SearchableSelect
             options={templateOptions}
-            value={data.selectedTemplate}
-            onChange={(value) => onChange("selectedTemplate", value)}
             onEnter={handleTemplateSelect}
           />
           <button
