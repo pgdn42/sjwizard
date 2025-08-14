@@ -1,118 +1,49 @@
-// pgdn42/sjwizard/sjwizard-6e1aed39b92e05964281326e206ce3cd9e5a1a89/src/components/Notes.tsx
+// src/components/Notes.tsx
 
 import { FloatingLabel } from "./FloatingLabel";
-import CopyIcon from "../assets/copyIcon";
 import TrashcanIcon from "../assets/trashcanIcon";
-import type { ModuleCopyConfig, CopyPart } from "../types";
+import type { FormData, ModuleCopyConfig } from "../types"; // <-- Import FormData
+import { DynamicButtonRow } from "./DynamicButtonRow";
 
 interface NotesProps {
-  data: {
-    bookingNumber: string;
-    newBookingNumber: string;
-    extraNote: string;
-    notesContent: string;
-  };
+  data: FormData;
   onChange: (field: string, value: string) => void;
   onClear: () => void;
-  copyConfig: ModuleCopyConfig;
+  customButtons: ModuleCopyConfig;
 }
 
-function generateCopyText(
-  template: CopyPart[],
-  data: NotesProps["data"]
-): string {
-  const now = new Date();
-  const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
-    .getHours()
-    .toString()
-    .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-
-  return template
-    .filter((part) => part.enabled)
-    .map((part) => {
-      switch (part.type) {
-        case "field":
-          const fieldKey = part.fieldId || part.id;
-          return data[fieldKey as keyof typeof data] || "";
-        case "static":
-          return part.value || "";
-        case "datetime":
-          return formattedDateTime;
-        default:
-          return "";
-      }
-    })
-    .join("");
-}
-
-export function Notes({ data, onChange, onClear, copyConfig }: NotesProps) {
-  const handleCopy = (templateName: keyof ModuleCopyConfig) => {
-    const template = copyConfig[templateName];
-    if (!template) return;
-
-    const textToCopy = generateCopyText(template, data);
-    navigator.clipboard.writeText(textToCopy);
-  };
-
+export function Notes({ data, onChange, onClear, customButtons }: NotesProps) {
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Noteringar</span>
         <div>
-          <button
-            className="button-svg"
-            title="Kopiera trafikstörning"
-            onClick={() => handleCopy("trafikstorning")}
-          >
-            Trafikstörning
-            <CopyIcon />
-          </button>
-          <button
-            className="button-svg"
-            title="Kopiera byte av avgång"
-            onClick={() => handleCopy("byteAvAvgang")}
-          >
-            Byte av avgång
-            <CopyIcon />
-          </button>
-          <button
-            className="button-svg"
-            title="Kopiera undantag"
-            onClick={() => handleCopy("undantagsaterkop")}
-          >
-            Undantagsåterköp
-            <CopyIcon />
-          </button>
-          <button
-            className="button-svg"
-            title="Clear all fields"
-            onClick={onClear}
-          >
-            <TrashcanIcon />
-          </button>
+          <DynamicButtonRow
+            buttons={customButtons}
+            formData={data}
+            onClear={onClear}
+          />
         </div>
       </div>
       <div className="notes-input-group">
         <FloatingLabel label="Bokningsnummer">
           <input
             type="text"
-            value={data.bookingNumber}
+            value={data.notes.bookingNumber}
             onChange={(e) => onChange("bookingNumber", e.target.value)}
           />
         </FloatingLabel>
         <FloatingLabel label="Nytt bokningsnummer">
           <input
             type="text"
-            value={data.newBookingNumber}
+            value={data.notes.newBookingNumber}
             onChange={(e) => onChange("newBookingNumber", e.target.value)}
           />
         </FloatingLabel>
         <FloatingLabel label="Extra notering">
           <input
             type="text"
-            value={data.extraNote}
+            value={data.notes.extraNote}
             onChange={(e) => onChange("extraNote", e.target.value)}
           />
         </FloatingLabel>
@@ -120,7 +51,7 @@ export function Notes({ data, onChange, onClear, copyConfig }: NotesProps) {
       <FloatingLabel label="Anteckningar">
         <textarea
           rows={4}
-          value={data.notesContent}
+          value={data.notes.notesContent}
           onChange={(e) => onChange("notesContent", e.target.value)}
         ></textarea>
       </FloatingLabel>

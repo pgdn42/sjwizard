@@ -10,10 +10,12 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   type Query,
   type DocumentData,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from "./firebase";
 
 /**
  * Attaches a real-time listener to a Firestore collection, with optional
@@ -96,4 +98,54 @@ export async function deleteDocument(
 ): Promise<void> {
   const docRef = doc(db, collectionName, docId);
   await deleteDoc(docRef);
+}
+//USER SETTINGS//
+/**
+ * Fetches a single user settings document from Firestore.
+ *
+ * @param userId - The ID of the user whose settings are being fetched.
+ * @returns The user's settings data object, or null if it doesn't exist.
+ */
+export async function getUserSettings(
+  userId: string
+): Promise<DocumentData | null> {
+  const docRef = doc(db, "userSettings", userId);
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists()) {
+    return docSnap.data();
+  } else {
+    // Document does not exist
+    return null;
+  }
+}
+
+/**
+ * Creates the initial settings document for a new user.
+ *
+ * @param userId - The ID of the new user.
+ * @param defaultSettings - The default settings object to save.
+ */
+export async function createUserSettings(
+  userId: string,
+  defaultSettings: DocumentData
+): Promise<void> {
+  const docRef = doc(db, "userSettings", userId);
+  await setDoc(docRef, defaultSettings);
+}
+
+/**
+ * Updates an existing user settings document in Firestore using a merge.
+ * This only modifies the fields provided and leaves other fields untouched.
+ *
+ * @param userId - The ID of the user.
+ * @param newSettings - An object containing the fields to update.
+ */
+export async function updateUserSettings(
+  userId: string,
+  newSettings: DocumentData
+): Promise<void> {
+  const docRef = doc(db, "userSettings", userId);
+  // Using { merge: true } ensures we don't overwrite the entire document
+  await setDoc(docRef, newSettings, { merge: true });
 }

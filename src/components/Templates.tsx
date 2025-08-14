@@ -20,6 +20,7 @@ interface TemplatesProps {
   onSelectTemplate: (id: string) => void;
   allTemplates: TemplateData[];
   templateOptions: { value: string; label: string }[];
+  userId: string;
 }
 
 export function Templates({
@@ -27,6 +28,7 @@ export function Templates({
   onSelectTemplate,
   allTemplates,
   templateOptions,
+  userId,
 }: TemplatesProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<TemplateData | null>(
@@ -92,8 +94,8 @@ export function Templates({
     const newTemplateData = {
       label: activeTemplate.label,
       content: activeTemplate.content,
-      visibility: "private",
-      ownerId: "temp-user-id", // Will be replaced by real auth
+      visibility: "private", // Default new templates to private
+      ownerId: userId, // <-- Use the actual user's ID here
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -125,8 +127,17 @@ export function Templates({
   }, [activeTemplate, originalTemplate]);
 
   const canSaveAsNew = useMemo(() => {
-    return activeTemplate?.label.trim() !== "";
-  }, [activeTemplate]);
+    // Label cannot be empty
+    if (!activeTemplate?.label.trim()) {
+      return false;
+    }
+    // If it's a brand new template (no original ID), it can be saved.
+    if (!originalTemplate?.id) {
+      return true;
+    }
+    // If editing an existing template, the label must be different to "Save as New".
+    return activeTemplate.label !== originalTemplate.label;
+  }, [activeTemplate, originalTemplate]);
 
   return (
     <>
@@ -186,7 +197,11 @@ export function Templates({
             <div className="modal-actions">
               <button
                 onClick={handleSave}
-                disabled={!activeTemplate?.id || !hasChanges}
+                disabled={
+                  !activeTemplate?.id ||
+                  !hasChanges ||
+                  !activeTemplate.label.trim()
+                }
               >
                 Save Changes
               </button>

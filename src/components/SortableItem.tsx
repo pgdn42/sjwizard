@@ -23,6 +23,23 @@ const DragHandleIcon = () => (
     <path d="M15 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
   </svg>
 );
+const DotIcon = ({ active }: { active?: boolean }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={active ? "currentColor" : "none"} // Fill if active
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+    <path d="M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0 -16 0" />
+  </svg>
+);
 
 interface SortableItemProps {
   part: CopyPart;
@@ -54,10 +71,6 @@ export function SortableItem({
         <DragHandleIcon />
       </button>
 
-      {part.type !== "static" && (
-        <span className="settings-row-label">{part.label}</span>
-      )}
-
       {part.type === "static" && (
         <input
           type="text"
@@ -68,7 +81,36 @@ export function SortableItem({
         />
       )}
 
+      {part.type === "linebreak" && (
+        <>
+          <span className="settings-row-label">Line Break(s)</span>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            value={part.lineBreakCount || 1}
+            onChange={(e) =>
+              onPartChange({ lineBreakCount: e.target.valueAsNumber })
+            }
+            className="settings-row-number-input"
+          />
+        </>
+      )}
+
+      {(part.type === "field" || part.type === "datetime") && (
+        <span className="settings-row-label">{part.label}</span>
+      )}
+
       <div className="settings-row-controls">
+        {part.type === "field" && (
+          <button
+            onClick={() => onPartChange({ appendPeriod: !part.appendPeriod })}
+            className={`button-icon ${part.appendPeriod ? "active" : ""}`}
+            title="Append period"
+          >
+            <DotIcon active={part.appendPeriod} />
+          </button>
+        )}
         <button
           onClick={() => onDelete(part.id)}
           className="delete-button"

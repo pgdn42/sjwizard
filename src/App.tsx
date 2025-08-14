@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { auth } from "./services/firebase";
 import { ErsattningVidForsening } from "./components/ErsattningVidForsening";
 import { Merkostnader } from "./components/Merkostnader";
 import { Notes } from "./components/Notes";
@@ -8,12 +10,19 @@ import { Train } from "./components/Train";
 import { Toolbar } from "./components/Toolbar";
 import { SettingsModal } from "./components/SettingsModal";
 import type { FormData, CopyConfig } from "./types";
-import { onCollectionUpdate } from "./services/firestoreService";
-import { replaceTemplateVariables } from "./utils"; // Import our new helper
+import {
+  onCollectionUpdate,
+  getUserSettings,
+  createUserSettings,
+  updateUserSettings,
+} from "./services/firestoreService";
+import { replaceTemplateVariables } from "./utils";
 import "./components/modules.css";
 import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
+import { Auth } from "./components/Auth";
 
+// --- Interfaces ---
 interface TemplateData {
   id: string;
   label: string;
@@ -25,6 +34,12 @@ interface TemplateOption {
   label: string;
 }
 
+export interface UserSettings {
+  copyConfig: CopyConfig;
+  // Add future settings here, e.g., theme?: "dark" | "light";
+}
+
+// --- Initial Data ---
 const initialFormData: FormData = {
   ersattning: {
     caseNumber: "",
@@ -52,219 +67,273 @@ const initialFormData: FormData = {
   },
 };
 
-const initialCopyConfig: CopyConfig = {
-  ersattning: {
-    default: [
+const defaultUserSettings: UserSettings = {
+  copyConfig: {
+    ersattning: [
       {
-        id: "caseNumber-1",
-        fieldId: "caseNumber",
-        label: "Ärendenummer",
-        type: "field",
-        enabled: true,
-      },
-      {
-        id: "static-1",
-        fieldId: "static",
-        label: "Static Text",
-        type: "static",
-        value: " EVF ",
-        enabled: true,
-      },
-      {
-        id: "decision-1",
-        fieldId: "decision",
-        label: "Beslut",
-        type: "field",
-        enabled: true,
-      },
-      {
-        id: "static-2",
-        fieldId: "static",
-        label: "Static Text",
-        type: "static",
-        value: " TÅG ",
-        enabled: true,
-      },
-      {
-        id: "trainNumber-1",
-        fieldId: "trainNumber",
-        label: "Tågnummer",
-        type: "field",
-        enabled: true,
-      },
-      {
-        id: "static-3",
-        fieldId: "static",
-        label: "Static Text",
-        type: "static",
-        value: " ",
-        enabled: true,
-      },
-      {
-        id: "departureDate-1",
-        fieldId: "departureDate",
-        label: "Avgångsdatum",
-        type: "field",
-        enabled: true,
-      },
-      {
-        id: "static-4",
-        fieldId: "static",
-        label: "Static Text",
-        type: "static",
-        value: " [",
-        enabled: true,
-      },
-      {
-        id: "datetime-1",
-        fieldId: "datetime",
-        label: "Current Date/Time",
-        type: "datetime",
-        enabled: true,
-      },
-      {
-        id: "static-5",
-        fieldId: "static",
-        label: "Static Text",
-        type: "static",
-        value: "]",
-        enabled: true,
-      },
-    ],
-  },
-  merkostnader: {
-    approved: [
-      {
-        id: "static-approved-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Godkänt ärende: ",
-        enabled: true,
-      },
-      {
-        id: "caseNumber-approved-1",
-        fieldId: "caseNumber",
-        type: "field",
-        label: "Ärendenummer",
-        enabled: true,
+        id: "btn_ersattning_default",
+        label: "Default",
+        icon: "CopyIcon",
+        type: "copy",
+        template: [
+          {
+            id: "caseNumber-1",
+            fieldId: "caseNumber",
+            moduleId: "ersattning",
+            label: "Ärendenummer",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "static-1",
+            label: "Static Text",
+            type: "static",
+            value: "EVF",
+            enabled: true,
+          },
+          {
+            id: "decision-1",
+            fieldId: "decision",
+            moduleId: "ersattning",
+            label: "Beslut",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "static-2",
+            label: "Static Text",
+            type: "static",
+            value: "TÅG",
+            enabled: true,
+          },
+          {
+            id: "trainNumber-1",
+            fieldId: "trainNumber",
+            moduleId: "ersattning",
+            label: "Tågnummer",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "departureDate-1",
+            fieldId: "departureDate",
+            moduleId: "ersattning",
+            label: "Avgångsdatum",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "static-4",
+            label: "Static Text",
+            type: "static",
+            value: "[",
+            enabled: true,
+          },
+          {
+            id: "datetime-1",
+            label: "Current Date/Time",
+            type: "datetime",
+            enabled: true,
+          },
+          {
+            id: "static-5",
+            label: "Static Text",
+            type: "static",
+            value: "]",
+            enabled: true,
+          },
+        ],
       },
     ],
-    denied: [
+    merkostnader: [
       {
-        id: "static-denied-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Nekat ärende: ",
-        enabled: true,
+        id: "btn_merkostnader_approved",
+        label: "Approved",
+        icon: "CopyCheckIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-approved-1",
+            label: "Static Text",
+            type: "static",
+            value: "Godkänt ärende:",
+            enabled: true,
+          },
+          {
+            id: "caseNumber-approved-1",
+            fieldId: "caseNumber",
+            moduleId: "merkostnader",
+            label: "Ärendenummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
       },
       {
-        id: "caseNumber-denied-1",
-        fieldId: "caseNumber",
-        type: "field",
-        label: "Ärendenummer",
-        enabled: true,
-      },
-    ],
-    caseNote: [
-      {
-        id: "static-note-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Notering: ",
-        enabled: true,
-      },
-      {
-        id: "caseNumber-note-1",
-        fieldId: "caseNumber",
-        type: "field",
-        label: "Ärendenummer",
-        enabled: true,
-      },
-    ],
-  },
-  notes: {
-    trafikstorning: [
-      {
-        id: "static-trafik-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Trafikstörning: Bknr ",
-        enabled: true,
+        id: "btn_merkostnader_denied",
+        label: "Denied",
+        icon: "CopyCrossIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-denied-1",
+            label: "Static Text",
+            type: "static",
+            value: "Nekat ärende:",
+            enabled: true,
+          },
+          {
+            id: "caseNumber-denied-1",
+            fieldId: "caseNumber",
+            moduleId: "merkostnader",
+            label: "Ärendenummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
       },
       {
-        id: "bookingNumber-trafik-1",
-        fieldId: "bookingNumber",
-        type: "field",
-        label: "Bokningsnummer",
-        enabled: true,
-      },
-    ],
-    byteAvAvgang: [
-      {
-        id: "static-byte-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Byte av avgång: Gammalt bknr ",
-        enabled: true,
-      },
-      {
-        id: "bookingNumber-byte-1",
-        fieldId: "bookingNumber",
-        type: "field",
-        label: "Bokningsnummer",
-        enabled: true,
-      },
-      {
-        id: "static-byte-2",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: ", nytt bknr ",
-        enabled: true,
-      },
-      {
-        id: "newBookingNumber-byte-1",
-        fieldId: "newBookingNumber",
-        type: "field",
-        label: "Nytt bokningsnummer",
-        enabled: true,
+        id: "btn_merkostnader_caseNote",
+        label: "Case Note",
+        icon: "CopyIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-note-1",
+            label: "Static Text",
+            type: "static",
+            value: "Notering:",
+            enabled: true,
+          },
+          {
+            id: "caseNumber-note-1",
+            fieldId: "caseNumber",
+            moduleId: "merkostnader",
+            label: "Ärendenummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
       },
     ],
-    undantagsaterkop: [
+    notes: [
       {
-        id: "static-undantag-1",
-        fieldId: "static",
-        type: "static",
-        label: "Static Text",
-        value: "Undantagsåterköp: Bknr ",
-        enabled: true,
+        id: "btn_notes_trafikstorning",
+        label: "Trafikstörning",
+        icon: "CopyIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-trafik-1",
+            label: "Static Text",
+            type: "static",
+            value: "Trafikstörning: Bknr",
+            enabled: true,
+          },
+          {
+            id: "bookingNumber-trafik-1",
+            fieldId: "bookingNumber",
+            moduleId: "notes",
+            label: "Bokningsnummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
       },
       {
-        id: "bookingNumber-undantag-1",
-        fieldId: "bookingNumber",
-        type: "field",
-        label: "Bokningsnummer",
-        enabled: true,
+        id: "btn_notes_byteAvAvgang",
+        label: "Byte av avgång",
+        icon: "CopyIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-byte-1",
+            label: "Static Text",
+            type: "static",
+            value: "Byte av avgång: Gammalt bknr",
+            enabled: true,
+          },
+          {
+            id: "bookingNumber-byte-1",
+            fieldId: "bookingNumber",
+            moduleId: "notes",
+            label: "Bokningsnummer",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "static-byte-2",
+            label: "Static Text",
+            type: "static",
+            value: ", nytt bknr",
+            enabled: true,
+          },
+          {
+            id: "newBookingNumber-byte-1",
+            fieldId: "newBookingNumber",
+            moduleId: "notes",
+            label: "Nytt bokningsnummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
+      },
+      {
+        id: "btn_notes_undantagsaterkop",
+        label: "Undantagsåterköp",
+        icon: "CopyIcon",
+        type: "copy",
+        template: [
+          {
+            id: "static-undantag-1",
+            label: "Static Text",
+            type: "static",
+            value: "Undantagsåterköp: Bknr",
+            enabled: true,
+          },
+          {
+            id: "bookingNumber-undantag-1",
+            fieldId: "bookingNumber",
+            moduleId: "notes",
+            label: "Bokningsnummer",
+            type: "field",
+            enabled: true,
+          },
+        ],
       },
     ],
   },
 };
 
 function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
-  const [copyConfig, setCopyConfig] = useState<CopyConfig>(initialCopyConfig);
+  const [userSettings, setUserSettings] =
+    useState<UserSettings>(defaultUserSettings);
   const [allTemplates, setAllTemplates] = useState<TemplateData[]>([]);
 
+  // Effect to listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onCollectionUpdate(
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Effect to load all user data (templates and settings)
+  useEffect(() => {
+    if (!currentUser) {
+      setAllTemplates([]);
+      setUserSettings(defaultUserSettings); // Reset to default on logout
+      setIsLoading(false);
+      return;
+    }
+
+    const unsubscribeTemplates = onCollectionUpdate(
       "templates",
-      null,
+      currentUser.uid,
       (fetchedTemplates) => {
         const templates = fetchedTemplates.map((t) => ({
           id: t.id,
@@ -274,8 +343,24 @@ function App() {
         setAllTemplates(templates);
       }
     );
-    return () => unsubscribe();
-  }, []);
+
+    const loadUserSettings = async () => {
+      const settings = (await getUserSettings(
+        currentUser.uid
+      )) as UserSettings | null;
+      if (settings) {
+        setUserSettings(settings);
+      } else {
+        await createUserSettings(currentUser.uid, defaultUserSettings);
+        setUserSettings(defaultUserSettings);
+      }
+      setIsLoading(false);
+    };
+
+    loadUserSettings();
+
+    return () => unsubscribeTemplates();
+  }, [currentUser]);
 
   const templateOptions: TemplateOption[] = useMemo(() => {
     return allTemplates.map((template) => ({
@@ -309,25 +394,38 @@ function App() {
   const handleTemplateSelect = (templateId: string) => {
     const selected = allTemplates.find((t) => t.id === templateId);
     if (selected) {
-      // 1. Replace variables in the content
       const processedContent = replaceTemplateVariables(
         selected.content,
         formData
       );
-
-      // 2. Copy the final text to the clipboard
       navigator.clipboard.writeText(processedContent);
-
-      // 3. Update the form state to show the selected template ID and its raw content
       setFormData((prev) => ({
         ...prev,
         templates: {
           selectedTemplate: templateId,
-          templateContent: selected.content, // Show raw content in UI
+          templateContent: selected.content,
         },
       }));
     }
   };
+
+  const handleLogout = () => {
+    signOut(auth).catch((error) => console.error("Logout Error:", error));
+  };
+
+  const handleSettingsSave = async (newSettings: UserSettings) => {
+    if (!currentUser) return;
+    setUserSettings(newSettings);
+    await updateUserSettings(currentUser.uid, newSettings);
+  };
+
+  if (isLoading) {
+    return <div className="app-container">Loading...</div>;
+  }
+
+  if (!currentUser) {
+    return <Auth />;
+  }
 
   return (
     <div className="app-container">
@@ -353,20 +451,20 @@ function App() {
         </button>
       </Toolbar>
       <ErsattningVidForsening
-        data={formData.ersattning}
+        data={formData}
         onChange={(field, value) =>
           handleDataChange("ersattning", field, value)
         }
         onClear={() => handleClear("ersattning")}
-        copyConfig={copyConfig.ersattning?.default || []}
+        customButtons={userSettings.copyConfig.ersattning || []}
       />
       <Merkostnader
-        data={formData.merkostnader}
+        data={formData}
         onChange={(field, value) =>
           handleDataChange("merkostnader", field, value)
         }
         onClear={() => handleClear("merkostnader")}
-        copyConfig={copyConfig.merkostnader || {}}
+        customButtons={userSettings.copyConfig.merkostnader || []}
       />
       <div className="row-container">
         <div className="ticket-container">
@@ -387,18 +485,21 @@ function App() {
         onSelectTemplate={handleTemplateSelect}
         allTemplates={allTemplates}
         templateOptions={templateOptions}
+        userId={currentUser.uid}
       />
       <Notes
-        data={formData.notes}
+        data={formData}
         onChange={(field, value) => handleDataChange("notes", field, value)}
         onClear={() => handleClear("notes")}
-        copyConfig={copyConfig.notes || {}}
+        customButtons={userSettings.copyConfig.notes || []}
       />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setSettingsOpen(false)}
-        copyConfig={copyConfig}
-        onSave={(newConfig) => setCopyConfig(newConfig)}
+        userSettings={userSettings}
+        onSave={handleSettingsSave}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
     </div>
   );

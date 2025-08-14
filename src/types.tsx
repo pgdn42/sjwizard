@@ -28,19 +28,27 @@ export interface FormData {
 export interface CopyPart {
   id: string;
   fieldId?: string;
+  moduleId?: keyof FormData;
   label: string;
   enabled: boolean;
-  type: "field" | "static" | "datetime";
-  value?: string; // For static text
+  type: "field" | "static" | "datetime" | "linebreak";
+  value?: string;
+  appendPeriod?: boolean;
+  lineBreakCount?: number;
 }
 
 export type CopyTemplate = CopyPart[];
 
-export type ModuleCopyConfig = {
-  [templateName: string]: CopyTemplate;
-};
+export interface CustomButton {
+  id: string;
+  label: string;
+  icon: string;
+  type: "copy" | "link"; // Added type property
+  template: CopyTemplate;
+}
+
+export type ModuleCopyConfig = CustomButton[];
 
 export type CopyConfig = {
-  // Using Partial to make modules optional, so we can add them one by one
   [K in keyof Partial<FormData>]?: ModuleCopyConfig;
 };

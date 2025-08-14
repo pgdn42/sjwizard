@@ -1,41 +1,24 @@
 import { useState, useMemo, useEffect } from "react";
+import type { User } from "firebase/auth";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-
 import { SortableItem } from "./SortableItem";
-import type { CopyConfig, CopyPart } from "../types";
+import type { CopyConfig, CopyPart, FormData } from "../types";
+import type { UserSettings } from "../App";
+import { buildStringFromTemplate } from "../utils";
+import { ManageButtonsTab } from "./ManageButtonsTab";
 
 // --- Data ---
 const moduleNames: { [key: string]: string } = {
-  ersattning: "Ersättning vid försening",
+  ersattning: "Ersättning",
   merkostnader: "Merkostnader",
   ticket: "Biljett",
   notes: "Noteringar",
 };
-
-const templateNamesByModule: { [key: string]: { [key: string]: string } } = {
-  ersattning: {
-    default: "Default",
-  },
-  merkostnader: {
-    approved: "Approved Claim",
-    denied: "Denied Claim",
-    caseNote: "Case Note",
-  },
-  ticket: {
-    default: "Default",
-  },
-  notes: {
-    trafikstorning: "Trafikstörning",
-    byteAvAvgang: "Byte av avgång",
-    undantagsaterkop: "Undantagsåterköp",
-  },
-};
-
 const placeholderData: { [key: string]: any } = {
   ersattning: {
     caseNumber: "1-23456789",
@@ -53,11 +36,7 @@ const placeholderData: { [key: string]: any } = {
     decision: "Godkänd",
     compensation: "150",
   },
-  ticket: {
-    bookingNumber: "ABC1234",
-    cardNumber: "1234",
-    cost: "599",
-  },
+  ticket: { bookingNumber: "ABC1234", cardNumber: "1234", cost: "599" },
   notes: {
     bookingNumber: "XYZ987",
     newBookingNumber: "NEW567",
@@ -65,7 +44,6 @@ const placeholderData: { [key: string]: any } = {
     notesContent: "This is a note.",
   },
 };
-
 const allModuleParts: { [key: string]: { [id: string]: CopyPart } } = {
   ersattning: {
     caseNumber: {
@@ -175,44 +153,73 @@ const allModuleParts: { [key: string]: { [id: string]: CopyPart } } = {
     },
   },
 };
-// --- End Data ---
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  copyConfig: CopyConfig;
-  onSave: (newConfig: CopyConfig) => void;
+  userSettings: UserSettings;
+  onSave: (newSettings: UserSettings) => void;
+  currentUser: User | null;
+  onLogout: () => void;
 }
 
 export function SettingsModal({
   isOpen,
   onClose,
-  copyConfig,
+  userSettings,
   onSave,
+  currentUser,
+  onLogout,
 }: SettingsModalProps) {
-  const [internalConfig, setInternalConfig] = useState<CopyConfig>(copyConfig);
+  const [activeTab, setActiveTab] = useState("account");
+  const [internalSettings, setInternalSettings] =
+    useState<UserSettings>(userSettings);
   const [selectedModule, setSelectedModule] =
     useState<keyof CopyConfig>("ersattning");
-  const [selectedTemplate, setSelectedTemplate] = useState("default");
+  const [selectedButtonIndex, setSelectedButtonIndex] = useState(0);
   const [partToAdd, setPartToAdd] = useState<string>("static");
 
-  // FIX: Sync internal state with props when the modal is opened
+  const allFieldsAsOptions = useMemo(() => {
+    const options = [
+      { value: "static", label: "Static Text" },
+      { value: "linebreak", label: "Line Break" },
+    ];
+    for (const moduleId in allModuleParts) {
+      const moduleName = moduleNames[moduleId] || "Unknown Module";
+      const parts = allModuleParts[moduleId as keyof typeof allModuleParts];
+      for (const fieldId in parts) {
+        const part = parts[fieldId];
+        options.push({
+          value: `${moduleId}.${fieldId}`,
+          label: `${moduleName}: ${part.label}`,
+        });
+      }
+    }
+    return options;
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
-      setInternalConfig(copyConfig);
+      setInternalSettings(userSettings);
     }
-  }, [copyConfig, isOpen]);
+  }, [userSettings, isOpen]);
+
+  const hasChanges = useMemo(() => {
+    return JSON.stringify(internalSettings) !== JSON.stringify(userSettings);
+  }, [internalSettings, userSettings]);
 
   useEffect(() => {
-    const availableTemplates = Object.keys(
-      templateNamesByModule[selectedModule] || {}
-    );
-    setSelectedTemplate(availableTemplates[0] || "");
+    setSelectedButtonIndex(0);
   }, [selectedModule]);
 
+  const currentButtons = useMemo(
+    () => internalSettings.copyConfig[selectedModule] || [],
+    [internalSettings, selectedModule]
+  );
+
   const currentTemplateConfig = useMemo(
-    () => internalConfig[selectedModule]?.[selectedTemplate] || [],
-    [internalConfig, selectedModule, selectedTemplate]
+    () => currentButtons[selectedButtonIndex]?.template || [],
+    [currentButtons, selectedButtonIndex]
   );
 
   const itemIds = useMemo(
@@ -220,44 +227,34 @@ export function SettingsModal({
     [currentTemplateConfig]
   );
 
-  const availablePartsToAdd = useMemo(() => {
-    const partsForModule = allModuleParts[selectedModule] || {};
-    return Object.values(partsForModule);
-  }, [selectedModule]);
-
   const previewText = useMemo(() => {
-    const now = new Date();
-    const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
-      .getHours()
-      .toString()
-      .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+    const fullPlaceholderData = Object.keys(placeholderData).reduce(
+      (acc, key) => {
+        return { ...acc, [key]: placeholderData[key] };
+      },
+      {} as FormData
+    );
 
-    const modulePlaceholders = placeholderData[selectedModule] || {};
-
-    return currentTemplateConfig
-      .filter((part) => part.enabled)
-      .map((part) => {
-        switch (part.type) {
-          case "field":
-            const fieldKey = part.fieldId || part.id;
-            return (
-              modulePlaceholders[fieldKey as keyof typeof modulePlaceholders] ||
-              `[${part.label}]`
-            );
-          case "static":
-            return part.value || "";
-          case "datetime":
-            return formattedDateTime;
-          default:
-            return "";
-        }
-      })
-      .join("");
-  }, [currentTemplateConfig, selectedModule]);
+    return buildStringFromTemplate(currentTemplateConfig, fullPlaceholderData);
+  }, [currentTemplateConfig]);
 
   if (!isOpen) return null;
+
+  const updateTemplateForSelectedButton = (newTemplate: CopyPart[]) => {
+    const newButtons = [...currentButtons];
+    newButtons[selectedButtonIndex] = {
+      ...newButtons[selectedButtonIndex],
+      template: newTemplate,
+    };
+
+    setInternalSettings((prev) => ({
+      ...prev,
+      copyConfig: {
+        ...prev.copyConfig,
+        [selectedModule]: newButtons,
+      },
+    }));
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -269,13 +266,7 @@ export function SettingsModal({
         oldIndex,
         newIndex
       );
-      setInternalConfig((prev) => ({
-        ...prev,
-        [selectedModule]: {
-          ...(prev[selectedModule] || {}),
-          [selectedTemplate]: newOrderedConfig,
-        },
-      }));
+      updateTemplateForSelectedButton(newOrderedConfig);
     }
   };
 
@@ -283,13 +274,7 @@ export function SettingsModal({
     const newModuleConfig = currentTemplateConfig.map((p) =>
       p.id === partId ? { ...p, ...newPart } : p
     );
-    setInternalConfig({
-      ...internalConfig,
-      [selectedModule]: {
-        ...(internalConfig[selectedModule] || {}),
-        [selectedTemplate]: newModuleConfig,
-      },
-    });
+    updateTemplateForSelectedButton(newModuleConfig);
   };
 
   const handleAddPart = () => {
@@ -299,138 +284,209 @@ export function SettingsModal({
     if (partToAdd === "static") {
       newPart = {
         id: `static-${Date.now()}`,
-        fieldId: "static",
         label: "Static Text",
         type: "static",
-        value: " ",
+        value: "",
+        enabled: true,
+      };
+    } else if (partToAdd === "linebreak") {
+      newPart = {
+        id: `linebreak-${Date.now()}`,
+        label: "Line Break",
+        type: "linebreak",
+        lineBreakCount: 1,
         enabled: true,
       };
     } else {
-      const partTemplate = allModuleParts[selectedModule]?.[partToAdd];
+      const [moduleId, fieldId] = partToAdd.split(".");
+      const partTemplate =
+        allModuleParts[moduleId as keyof typeof allModuleParts]?.[fieldId];
       if (partTemplate) {
         newPart = {
           ...partTemplate,
-          id: `${partTemplate.id}-${Date.now()}`,
-          fieldId: partTemplate.id,
+          id: `${partToAdd}-${Date.now()}`,
+          fieldId: fieldId,
+          moduleId: moduleId as keyof FormData,
         };
       }
     }
 
     if (newPart) {
-      setInternalConfig((prev) => ({
-        ...prev,
-        [selectedModule]: {
-          ...(prev[selectedModule] || {}),
-          [selectedTemplate]: [
-            ...(prev[selectedModule]?.[selectedTemplate] || []),
-            newPart,
-          ],
-        },
-      }));
+      updateTemplateForSelectedButton([...currentTemplateConfig, newPart]);
     }
   };
 
   const handleDeletePart = (partId: string) => {
-    setInternalConfig((prev) => ({
-      ...prev,
-      [selectedModule]: {
-        ...(prev[selectedModule] || {}),
-        [selectedTemplate]: (
-          prev[selectedModule]?.[selectedTemplate] || []
-        ).filter((p) => p.id !== partId),
-      },
-    }));
+    const newTemplate = currentTemplateConfig.filter((p) => p.id !== partId);
+    updateTemplateForSelectedButton(newTemplate);
   };
 
   const handleSave = () => {
-    onSave(internalConfig);
+    onSave(internalSettings);
+  };
+
+  const handleSaveAndClose = () => {
+    onSave(internalSettings);
     onClose();
   };
 
+  const handleClose = () => {
+    if (hasChanges) {
+      if (
+        window.confirm(
+          "You have unsaved changes. Are you sure you want to close?"
+        )
+      ) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>Settings</h2>
 
-        <div className="settings-section">
-          <h4>Configure Copy Templates</h4>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <select
-              style={{ flex: 1 }}
-              value={selectedModule}
-              onChange={(e) =>
-                setSelectedModule(e.target.value as keyof CopyConfig)
-              }
-            >
-              {Object.keys(moduleNames).map((key) => (
-                <option key={key} value={key}>
-                  {moduleNames[key]}
-                </option>
-              ))}
-            </select>
-
-            <select
-              style={{ flex: 1 }}
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-            >
-              {Object.entries(templateNamesByModule[selectedModule] || {}).map(
-                ([key, name]) => (
-                  <option key={key} value={key}>
-                    {name}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-
-          <div className="settings-preview">
-            <label>Live Preview</label>
-            <textarea value={previewText} readOnly rows={2}></textarea>
-          </div>
+        <div className="modal-tabs">
+          <button
+            className={`tab-button ${activeTab === "account" ? "active" : ""}`}
+            onClick={() => setActiveTab("account")}
+          >
+            Account
+          </button>
+          <button
+            className={`tab-button ${
+              activeTab === "templates" ? "active" : ""
+            }`}
+            onClick={() => setActiveTab("templates")}
+          >
+            Copy Templates
+          </button>
+          <button
+            className={`tab-button ${activeTab === "buttons" ? "active" : ""}`}
+            onClick={() => setActiveTab("buttons")}
+          >
+            Manage Buttons
+          </button>
         </div>
 
-        <div className="settings-rows-container">
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={itemIds}
-              strategy={verticalListSortingStrategy}
-            >
-              {currentTemplateConfig.map((part) => (
-                <SortableItem
-                  key={part.id}
-                  part={part}
-                  onPartChange={(changedPart) =>
-                    handlePartChange(part.id, changedPart)
+        <div className="modal-tab-content">
+          {activeTab === "account" && (
+            <div className="account-tab">
+              <p>
+                <strong>Logged in as:</strong> {currentUser?.email}
+              </p>
+              <button
+                onClick={() => {
+                  onLogout();
+                  onClose();
+                }}
+                className="button-logout"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+
+          {activeTab === "templates" && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                  marginBottom: "10px",
+                }}
+              >
+                <select
+                  style={{ flex: 1 }}
+                  value={selectedModule}
+                  onChange={(e) =>
+                    setSelectedModule(e.target.value as keyof CopyConfig)
                   }
-                  onDelete={handleDeletePart}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
+                >
+                  {Object.keys(moduleNames).map((key) => (
+                    <option key={key} value={key}>
+                      {moduleNames[key]}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  style={{ flex: 1 }}
+                  value={selectedButtonIndex}
+                  onChange={(e) =>
+                    setSelectedButtonIndex(parseInt(e.target.value, 10))
+                  }
+                >
+                  {currentButtons.map((button, index) => (
+                    <option key={button.id} value={index}>
+                      {button.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="settings-preview">
+                <label>Live Preview</label>
+                <textarea value={previewText} readOnly rows={2}></textarea>
+              </div>
+              <div className="settings-rows-container">
+                <DndContext
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={itemIds}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {currentTemplateConfig.map((part) => (
+                      <SortableItem
+                        key={part.id}
+                        part={part}
+                        onPartChange={(changedPart) =>
+                          handlePartChange(part.id, changedPart)
+                        }
+                        onDelete={handleDeletePart}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
+              <div className="add-part-controls">
+                <select
+                  value={partToAdd}
+                  onChange={(e) => setPartToAdd(e.target.value)}
+                >
+                  {allFieldsAsOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <button onClick={handleAddPart}>Add</button>
+              </div>
+            </>
+          )}
 
-        <div className="add-part-controls">
-          <select
-            value={partToAdd}
-            onChange={(e) => setPartToAdd(e.target.value)}
-          >
-            <option value="static">Static Text</option>
-            {availablePartsToAdd.map((part) => (
-              <option key={part.id} value={part.id}>
-                {part.label}
-              </option>
-            ))}
-          </select>
-          <button onClick={handleAddPart}>Add</button>
+          {activeTab === "buttons" && (
+            <ManageButtonsTab
+              internalSettings={internalSettings}
+              setInternalSettings={setInternalSettings}
+            />
+          )}
         </div>
 
         <div className="modal-actions">
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleSave}>Save & Close</button>
+          <div className="modal-actions-left">
+            <button onClick={handleSave} disabled={!hasChanges}>
+              Save
+            </button>
+            <button onClick={handleSaveAndClose} disabled={!hasChanges}>
+              Save & Close
+            </button>
+          </div>
+          <button onClick={handleClose}>Close</button>
         </div>
       </div>
     </div>
