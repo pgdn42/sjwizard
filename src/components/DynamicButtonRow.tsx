@@ -42,44 +42,46 @@ export function DynamicButtonRow({
 
   return (
     <div className="dynamic-buttons-container">
-      {buttons.map((button) => {
-        const IconComponent = iconMap[button.icon] || CopyIcon;
+      <div className="dynamic-buttons-container-buttons">
+        {buttons.map((button) => {
+          const IconComponent = iconMap[button.icon] || CopyIcon;
 
-        // --- UPDATED: Conditional Rendering ---
-        if (button.displayType === "text") {
+          // --- UPDATED: Conditional Rendering ---
+          if (button.displayType === "text") {
+            return (
+              <button
+                key={button.id}
+                className="button-text-small" // New class for smaller text buttons
+                title={button.label}
+                onClick={() => handleButtonClick(button)}
+              >
+                {button.label}
+              </button>
+            );
+          }
+
+          // Default to icon button
           return (
             <button
               key={button.id}
-              className="button-text-small" // New class for smaller text buttons
+              className="button-svg"
               title={button.label}
               onClick={() => handleButtonClick(button)}
             >
-              {button.label}
+              <IconComponent />
             </button>
           );
-        }
-
-        // Default to icon button
-        return (
+        })}
+        {onClear && ( // Only render if onClear is provided
           <button
-            key={button.id}
             className="button-svg"
-            title={button.label}
-            onClick={() => handleButtonClick(button)}
+            title="Clear all fields"
+            onClick={onClear}
           >
-            <IconComponent />
+            <TrashcanIcon />
           </button>
-        );
-      })}
-      {onClear && ( // Only render if onClear is provided
-        <button
-          className="button-svg"
-          title="Clear all fields"
-          onClick={onClear}
-        >
-          <TrashcanIcon />
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

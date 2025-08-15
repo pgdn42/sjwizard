@@ -96,10 +96,9 @@ export function Train({ data, customButtons }: TicketProps) {
     <div className="section-container">
       <div className="section-header">
         <span className="section-title">Tåg</span>
-        <DynamicButtonRow
-          buttons={customButtons}
-          formData={data} // Assuming no specific form data is needed here
-        />
+        <div className="buttons-wrapper">
+          <DynamicButtonRow buttons={customButtons} formData={data} />
+        </div>
         <button className="button-svg" title="Järnvägs karta">
           <MapIcon />
         </button>

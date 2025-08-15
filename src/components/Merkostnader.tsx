@@ -19,7 +19,7 @@ export function Merkostnader({
     <div className="section-container">
       <div className="section-header">
         <span className="section-title">Merkostnader</span>
-        <div>
+        <div className="buttons-wrapper">
           <DynamicButtonRow
             buttons={customButtons}
             formData={data}

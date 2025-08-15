@@ -30,11 +30,13 @@ export function Ticket({
     <div className="section-container">
       <div className="section-header">
         <span className="section-title">Biljett</span>
-        <DynamicButtonRow
-          buttons={customButtons}
-          formData={data}
-          onClear={onClear}
-        />
+        <div className="buttons-wrapper">
+          <DynamicButtonRow
+            buttons={customButtons}
+            formData={data}
+            onClear={onClear}
+          />
+        </div>
       </div>
       <div className="form-grid-single-col">
         <FloatingLabel label="Bokningsnummer">

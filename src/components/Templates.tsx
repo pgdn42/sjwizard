@@ -161,8 +161,9 @@ export function Templates({
       <div className="section-container">
         <div className="section-header">
           <span className="section-title">Templates</span>
-
-          <DynamicButtonRow buttons={customButtons} formData={data} />
+          <div className="buttons-wrapper">
+            <DynamicButtonRow buttons={customButtons} formData={data} />
+          </div>
         </div>
         <div className="template-controls">
           <SearchableSelect
