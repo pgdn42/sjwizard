@@ -18,14 +18,12 @@ export function ErsattningVidForsening({
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Ersättning vid försening</span>
-        <div>
-          <DynamicButtonRow
-            buttons={customButtons}
-            formData={data}
-            onClear={onClear}
-          />
-        </div>
+        <span className="section-title">Ersättning vid försening</span>
+        <DynamicButtonRow
+          buttons={customButtons}
+          formData={data}
+          onClear={onClear}
+        />
       </div>
       <div className="ersattning-input-group">
         <FloatingLabel label="Ärendenummer" className="width-small-medium">

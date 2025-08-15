@@ -1,48 +1,60 @@
 import { FloatingLabel } from "./FloatingLabel";
-import TrashcanIcon from "../assets/trashcanIcon";
+import { DynamicButtonRow } from "./DynamicButtonRow";
+import type { ModuleCopyConfig } from "../types";
 
 interface TicketProps {
   data: {
-    bookingNumber: string;
-    cardNumber: string;
-    cost: string;
+    ersattning: any;
+    ticket: {
+      bookingNumber: string;
+      cost: string;
+      cardNumber: string;
+    };
+    merkostnader: any;
+    templates: any;
+    notes: any;
+    train: any;
   };
+  customButtons: ModuleCopyConfig;
   onChange: (field: string, value: string) => void;
   onClear: () => void;
 }
 
-export function Ticket({ data, onChange, onClear }: TicketProps) {
+export function Ticket({
+  data,
+  onChange,
+  onClear,
+  customButtons,
+}: TicketProps) {
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Biljett</span>
-        <button
-          className="button-svg"
-          title="Clear all fields"
-          onClick={onClear}
-        >
-          <TrashcanIcon />
-        </button>
+        <span className="section-title">Biljett</span>
+        <DynamicButtonRow
+          buttons={customButtons}
+          formData={data}
+          onClear={onClear}
+        />
       </div>
       <div className="form-grid-single-col">
         <FloatingLabel label="Bokningsnummer">
           <input
             type="text"
-            value={data.bookingNumber}
+            value={data.ticket.bookingNumber}
             onChange={(e) => onChange("bookingNumber", e.target.value)}
           />
         </FloatingLabel>
         <FloatingLabel label="Beställningsnummer">
           <input
             type="text"
-            value={data.cost}
+            value={data.ticket.cost}
             onChange={(e) => onChange("cost", e.target.value)}
           />
         </FloatingLabel>
         <FloatingLabel label="Kortnummer">
           <input
             type="text"
-            value={data.cardNumber}
+            value={data.ticket.cardNumber}
             onChange={(e) => onChange("cardNumber", e.target.value)}
           />
         </FloatingLabel>

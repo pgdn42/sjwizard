@@ -17,6 +17,8 @@ const moduleNames: { [key: string]: string } = {
   ersattning: "Ersättning",
   merkostnader: "Merkostnader",
   ticket: "Biljett",
+  train: "Tåg",
+  templates: "Mallar",
   notes: "Noteringar",
 };
 const placeholderData: { [key: string]: any } = {

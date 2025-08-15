@@ -18,7 +18,7 @@ export function Merkostnader({
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Merkostnader</span>
+        <span className="section-title">Merkostnader</span>
         <div>
           <DynamicButtonRow
             buttons={customButtons}

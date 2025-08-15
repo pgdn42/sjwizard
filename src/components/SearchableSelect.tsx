@@ -96,7 +96,7 @@ export function SearchableSelect({ options, onEnter }: SearchableSelectProps) {
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setDropdownOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder="Sök mall..."
+        placeholder={"Sök mall..."}
         className="input"
       />
       {isDropdownOpen && (

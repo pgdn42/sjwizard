@@ -6,6 +6,8 @@ import {
   updateDocument,
   deleteDocument,
 } from "../services/firestoreService";
+import { DynamicButtonRow } from "./DynamicButtonRow";
+import type { ModuleCopyConfig } from "../types";
 
 // Define the shape of a template object
 interface TemplateData {
@@ -21,6 +23,19 @@ interface TemplatesProps {
   allTemplates: TemplateData[];
   templateOptions: { value: string; label: string }[];
   userId: string;
+  customButtons: ModuleCopyConfig;
+  data: {
+    ersattning: any;
+    ticket: {
+      bookingNumber: string;
+      cost: string;
+      cardNumber: string;
+    };
+    merkostnader: any;
+    templates: any;
+    notes: any;
+    train: any;
+  };
 }
 
 export function Templates({
@@ -29,6 +44,8 @@ export function Templates({
   allTemplates,
   templateOptions,
   userId,
+  customButtons,
+  data,
 }: TemplatesProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<TemplateData | null>(
@@ -143,7 +160,15 @@ export function Templates({
     <>
       <div className="section-container">
         <div className="section-header">
-          <span>Templates</span>
+          <span className="section-title">Templates</span>
+
+          <DynamicButtonRow buttons={customButtons} formData={data} />
+        </div>
+        <div className="template-controls">
+          <SearchableSelect
+            options={templateOptions}
+            onEnter={onSelectTemplate}
+          />
           <button
             className="button-svg"
             title="Edit Templates"
@@ -151,12 +176,6 @@ export function Templates({
           >
             <PencilIcon />
           </button>
-        </div>
-        <div className="template-controls">
-          <SearchableSelect
-            options={templateOptions}
-            onEnter={onSelectTemplate}
-          />
         </div>
       </div>
 

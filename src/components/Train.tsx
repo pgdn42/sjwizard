@@ -1,3 +1,6 @@
+import type { ModuleCopyConfig } from "../types";
+import { DynamicButtonRow } from "./DynamicButtonRow";
+
 const MapIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -56,7 +59,22 @@ const TrainItem = ({
   </div>
 );
 
-export function Train() {
+interface TicketProps {
+  data: {
+    ersattning: any;
+    ticket: {
+      bookingNumber: string;
+      cost: string;
+      cardNumber: string;
+    };
+    merkostnader: any;
+    templates: any;
+    notes: any;
+    train: any;
+  };
+  customButtons: ModuleCopyConfig;
+}
+export function Train({ data, customButtons }: TicketProps) {
   const trains = [
     {
       from: "Stockholm C",
@@ -77,7 +95,11 @@ export function Train() {
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Tåg</span>
+        <span className="section-title">Tåg</span>
+        <DynamicButtonRow
+          buttons={customButtons}
+          formData={data} // Assuming no specific form data is needed here
+        />
         <button className="button-svg" title="Järnvägs karta">
           <MapIcon />
         </button>

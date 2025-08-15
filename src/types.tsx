@@ -23,6 +23,7 @@ export interface FormData {
     extraNote: string;
     notesContent: string;
   };
+  train: {};
 }
 
 export interface CopyPart {
@@ -43,7 +44,8 @@ export interface CustomButton {
   id: string;
   label: string;
   icon: string;
-  type: "copy" | "link"; // Added type property
+  type: "copy" | "link";
+  displayType: "icon" | "text";
   template: CopyTemplate;
 }
 

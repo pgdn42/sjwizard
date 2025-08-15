@@ -15,7 +15,7 @@ const iconMap: { [key: string]: React.ComponentType } = {
 interface DynamicButtonRowProps {
   buttons: ModuleCopyConfig;
   formData: FormData;
-  onClear: () => void;
+  onClear?: () => void;
 }
 
 export function DynamicButtonRow({
@@ -25,9 +25,14 @@ export function DynamicButtonRow({
 }: DynamicButtonRowProps) {
   const handleButtonClick = (button: CustomButton) => {
     if (button.type === "link") {
-      const url = buildStringFromTemplate(button.template, formData, "");
+      let url = buildStringFromTemplate(button.template, formData, "");
       if (url) {
-        window.open(url, "_blank");
+        // Check if the URL starts with http:// or https://
+        if (!/^https?:\/\//i.test(url)) {
+          // If not, prepend https://
+          url = "https://" + url;
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
       }
     } else {
       const textToCopy = buildStringFromTemplate(button.template, formData);
@@ -39,6 +44,22 @@ export function DynamicButtonRow({
     <div className="dynamic-buttons-container">
       {buttons.map((button) => {
         const IconComponent = iconMap[button.icon] || CopyIcon;
+
+        // --- UPDATED: Conditional Rendering ---
+        if (button.displayType === "text") {
+          return (
+            <button
+              key={button.id}
+              className="button-text-small" // New class for smaller text buttons
+              title={button.label}
+              onClick={() => handleButtonClick(button)}
+            >
+              {button.label}
+            </button>
+          );
+        }
+
+        // Default to icon button
         return (
           <button
             key={button.id}
@@ -50,9 +71,15 @@ export function DynamicButtonRow({
           </button>
         );
       })}
-      <button className="button-svg" title="Clear all fields" onClick={onClear}>
-        <TrashcanIcon />
-      </button>
+      {onClear && ( // Only render if onClear is provided
+        <button
+          className="button-svg"
+          title="Clear all fields"
+          onClick={onClear}
+        >
+          <TrashcanIcon />
+        </button>
+      )}
     </div>
   );
 }

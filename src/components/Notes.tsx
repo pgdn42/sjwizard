@@ -16,7 +16,7 @@ export function Notes({ data, onChange, onClear, customButtons }: NotesProps) {
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Noteringar</span>
+        <span className="section-title">Noteringar</span>
         <div>
           <DynamicButtonRow
             buttons={customButtons}

@@ -65,6 +65,7 @@ const initialFormData: FormData = {
     extraNote: "",
     notesContent: "",
   },
+  train: {},
 };
 
 const defaultUserSettings: UserSettings = {
@@ -75,6 +76,7 @@ const defaultUserSettings: UserSettings = {
         label: "Default",
         icon: "CopyIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "caseNumber-1",
@@ -151,6 +153,7 @@ const defaultUserSettings: UserSettings = {
         label: "Approved",
         icon: "CopyCheckIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-approved-1",
@@ -174,6 +177,7 @@ const defaultUserSettings: UserSettings = {
         label: "Denied",
         icon: "CopyCrossIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-denied-1",
@@ -197,6 +201,7 @@ const defaultUserSettings: UserSettings = {
         label: "Case Note",
         icon: "CopyIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-note-1",
@@ -222,6 +227,7 @@ const defaultUserSettings: UserSettings = {
         label: "Trafikstörning",
         icon: "CopyIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-trafik-1",
@@ -245,6 +251,7 @@ const defaultUserSettings: UserSettings = {
         label: "Byte av avgång",
         icon: "CopyIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-byte-1",
@@ -283,6 +290,7 @@ const defaultUserSettings: UserSettings = {
         label: "Undantagsåterköp",
         icon: "CopyIcon",
         type: "copy",
+        displayType: "icon",
         template: [
           {
             id: "static-undantag-1",
@@ -302,6 +310,42 @@ const defaultUserSettings: UserSettings = {
         ],
       },
     ],
+    ticket: [
+      {
+        id: "btn_ticket_copy",
+        label: "Copy Ticket",
+        icon: "CopyIcon",
+        type: "copy",
+        displayType: "icon",
+        template: [
+          {
+            id: "bookingNumber-ticket-1",
+            fieldId: "bookingNumber",
+            moduleId: "ticket",
+            label: "Bokningsnummer",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "cardNumber-ticket-1",
+            fieldId: "cardNumber",
+            moduleId: "ticket",
+            label: "Kortnummer",
+            type: "field",
+            enabled: true,
+          },
+          {
+            id: "cost-ticket-1",
+            fieldId: "cost",
+            moduleId: "ticket",
+            label: "Kostnad",
+            type: "field",
+            enabled: true,
+          },
+        ],
+      },
+    ],
+    train: [],
   },
 };
 
@@ -430,11 +474,6 @@ function App() {
   return (
     <div className="app-container">
       <Toolbar>
-        <button className="button-text">script</button>
-        <button className="button-text">CHATT</button>
-        <button className="button-text">SAMTAL</button>
-        <button className="button-text">TCA</button>
-        <button className="button-text">TRAFIKINFO</button>
         <button
           className="button-svg"
           title="Settings"
@@ -469,15 +508,19 @@ function App() {
       <div className="row-container">
         <div className="ticket-container">
           <Ticket
-            data={formData.ticket}
+            data={formData}
             onChange={(field, value) =>
               handleDataChange("ticket", field, value)
             }
             onClear={() => handleClear("ticket")}
+            customButtons={userSettings.copyConfig.ticket || []}
           />
         </div>
         <div className="train-container">
-          <Train />
+          <Train
+            data={formData}
+            customButtons={userSettings.copyConfig.train || []}
+          />
         </div>
       </div>
       <Templates
@@ -486,6 +529,8 @@ function App() {
         allTemplates={allTemplates}
         templateOptions={templateOptions}
         userId={currentUser.uid}
+        data={formData}
+        customButtons={userSettings.copyConfig.templates || []}
       />
       <Notes
         data={formData}

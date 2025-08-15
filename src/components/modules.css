@@ -85,8 +85,15 @@ button {
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 5px;
   display: flex;
+  align-items: center; /* Use align-items instead of space-between */
+  gap: 2px; /* Add a gap for spacing */
   justify-content: space-between;
-  align-items: center;
+  flex-shrink: 0; /* Prevent the header from shrinking */
+}
+
+.section-title {
+  flex-shrink: 0; /* Prevent the title from shrinking */
+  white-space: nowrap; /* Prevent the title from wrapping to a new line */
 }
 
 /* --- Input Groups --- */
@@ -309,12 +316,12 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex-grow: 1;
+  flex-grow: 1; /* This is the key property */
   overflow-y: auto;
   padding: 8px;
   background-color: #2a3038;
   border-radius: var(--border-radius);
-  min-height: 150px; /* Give it a minimum height */
+  min-height: 150px;
 }
 .settings-row {
   display: flex;
@@ -323,7 +330,6 @@ button {
   background-color: var(--color-background);
   padding: 8px;
   border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
 }
 .drag-handle {
   background: none;
@@ -345,7 +351,7 @@ button {
 }
 .settings-row-input {
   flex-grow: 1;
-  width: auto; /* Allow it to grow */
+  width: 150px;
 }
 .settings-row-controls {
   display: flex;
@@ -369,7 +375,9 @@ button {
   width: auto;
 }
 .add-part-controls {
+  flex-shrink: 0; /* Prevents the add bar from shrinking */
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 10px;
   padding-top: 10px;
@@ -380,7 +388,7 @@ button {
 }
 .add-part-controls button {
   flex-shrink: 0;
-  width: 80px;
+  height: 40px;
 }
 button:disabled,
 button:disabled:hover {
@@ -490,7 +498,7 @@ button:disabled:hover {
 
 .modal-tab-content {
   flex-grow: 1;
-  min-height: 250px; /* Give the content area a minimum height */
+  min-height: 0px; /* Give the content area a minimum height */
   display: flex;
   flex-direction: column;
 }
@@ -533,4 +541,135 @@ button:disabled:hover {
 
 .button-icon.active {
   color: var(--color-primary);
+}
+.settings-hint {
+  font-size: 0.85em;
+  color: var(--color-placeholder);
+  margin-top: -5px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-style: italic;
+}
+
+.manage-button-row {
+  display: grid;
+  /* Drag Handle | Label (stretches) | Select | Select | Delete */
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 10px;
+  align-items: center; /* Vertically align items */
+}
+
+.button-text-small {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 2px solid var(--color-primary);
+  font-size: 0.9em;
+  padding: 0px 8px;
+  border-radius: var(--border-radius);
+  white-space: nowrap;
+}
+
+.button-text-small:hover {
+  border-color: var(--color-primary);
+}
+.add-button-row {
+  flex-grow: 1;
+  border: none;
+  padding: 0;
+  background: none;
+}
+.manage-buttons-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fills the vertical space of the tab content area */
+}
+/* --- Icon Picker Popover Styles (Replaces Icon Picker Modal styles) --- */
+.icon-picker-popover {
+  position: fixed; /* Use fixed to break out of the modal's scroll container */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1002;
+  width: 200px; /* Fixed width helps with centering math */
+  max-height: 125px;
+  min-height: 125px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Force a 4-column grid */
+  gap: 5px;
+}
+
+.icon-picker-button {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.icon-picker-button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.button-config-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.button-icon-preview {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  color: var(--color-text);
+  cursor: pointer;
+  max-height: 40px;
+}
+/* --- Layout Fixes --- */
+
+.add-button-staging-area {
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+.add-button-staging-area input {
+  width: 100%;
+}
+
+/* Add this to catch clicks outside the popover to close it */
+.modal-overlay-transparent {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1001; /* Below popover, above modal */
+  background: transparent;
+}
+.dynamic-buttons-container {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-grow: 1; /* Take up all remaining space */
+  overflow-x: auto; /* Enable scrolling */
+  min-width: 0; /* Crucial for allowing the container to scroll */
+  /* Hide the scrollbar for a cleaner look */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.dynamic-buttons-container::-webkit-scrollbar {
+  display: none; /* WebKit Browsers */
 }
