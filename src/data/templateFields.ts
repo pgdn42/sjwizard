@@ -1,4 +1,4 @@
-import type { CopyPart, FormData } from "../types";
+import type { CopyPart } from "../types";
 
 export const moduleNames: { [key: string]: string } = {
   ersattning: "Ersättning",

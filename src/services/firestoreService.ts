@@ -54,6 +54,24 @@ export function onCollectionUpdate(
   return unsubscribe;
 }
 
+export function onUserCollectionUpdate(
+  collectionName: string,
+  userId: string,
+  callback: (data: DocumentData[]) => void
+) {
+  const dataCollection = collection(db, collectionName);
+  const q = query(dataCollection, where("ownerId", "==", userId));
+
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const data: DocumentData[] = [];
+    querySnapshot.forEach((doc) => {
+      data.push({ id: doc.id, ...doc.data() });
+    });
+    callback(data);
+  });
+
+  return unsubscribe;
+}
 /**
  * Adds a new document to a specified collection.
  *

@@ -15,11 +15,13 @@ import {
   getUserSettings,
   createUserSettings,
   updateUserSettings,
+  addDocument,
 } from "./services/firestoreService";
 import { replaceTemplateVariables } from "./utils";
 import "./components/modules.css";
 import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
+import AddToListIcon from "./assets/addToListIcon";
 import { Auth } from "./components/Auth";
 
 // --- Interfaces ---
@@ -38,14 +40,20 @@ export interface UserSettings {
   copyConfig: CopyConfig;
   // Add future settings here, e.g., theme?: "dark" | "light";
 }
-
+const getTodayString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, "0");
+  const day = today.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 // --- Initial Data ---
 const initialFormData: FormData = {
   ersattning: {
     caseNumber: "",
     decision: "AVSLAG",
     trainNumber: "",
-    departureDate: "2025-08-12",
+    departureDate: getTodayString(),
     departureStation: "",
     arrivalStation: "",
     delay: "",
@@ -435,6 +443,42 @@ function App() {
     }
   };
 
+  const handleClearAndSaveTrain = async () => {
+    if (!currentUser) return; // Make sure user is logged in
+
+    const {
+      trainNumber,
+      departureStation,
+      arrivalStation,
+      delay,
+      departureDate,
+    } = formData.ersattning;
+
+    // Basic validation: ensure we have at least a train number and delay
+    if (!trainNumber.trim() || !delay.trim()) {
+      alert("Please enter at least a train number and delay before saving.");
+      return;
+    }
+
+    const trainData = {
+      trainNumber,
+      departureStation,
+      arrivalStation,
+      delay: parseInt(delay, 10) || 0, // Store delay as a number
+      departureDate,
+      ownerId: currentUser.uid,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await addDocument("delayedTrains", trainData);
+      handleClear(); // Clear all fields after successful save
+    } catch (error) {
+      console.error("Error saving train data:", error);
+      alert("Failed to save train data. Please try again.");
+    }
+  };
+
   const handleTemplateSelect = (templateId: string) => {
     const selected = allTemplates.find((t) => t.id === templateId);
     if (selected) {
@@ -483,6 +527,13 @@ function App() {
         </button>
         <button
           className="button-svg"
+          title="Save train info and clear all fields"
+          onClick={handleClearAndSaveTrain}
+        >
+          <AddToListIcon />
+        </button>
+        <button
+          className="button-svg"
           title="Clear all fields"
           onClick={() => handleClear()}
         >
@@ -520,6 +571,7 @@ function App() {
           <Train
             data={formData}
             customButtons={userSettings.copyConfig.train || []}
+            userId={currentUser.uid}
           />
         </div>
       </div>

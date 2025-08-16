@@ -5,6 +5,7 @@
   --color-containerbg: #242424;
   --color-surface: #000000;
   --color-primary: #b84e26;
+  --color-primary-hover: #b84d2644;
   --color-text: #f1f1f1;
   /*--color-border: #4d4441;*/
   --color-placeholder: #7c7572;
@@ -34,7 +35,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 173, 181, 0.3);
+  box-shadow: 0 0 0 2px var(--color-primary-hover);
 }
 
 button {
@@ -45,8 +46,8 @@ button {
 .app-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 15px;
+  gap: 10px;
+  padding: 5px;
   max-width: 580px;
   margin: 0 auto;
 }
@@ -63,7 +64,10 @@ button {
 .train-container {
   flex: 1;
 }
-
+.train-list-container {
+  max-height: 150px;
+  scrollbar-width: none;
+}
 /* --- Generic Section Component --- */
 .section-container {
   background-color: var(--color-surface);
@@ -90,6 +94,7 @@ button {
   white-space: nowrap; /* Prevent the title from wrapping to a new line */
   color: var(--color-primary);
   font-weight: 600;
+  font-size: 1rem;
 }
 
 /* --- Input Groups --- */
@@ -118,7 +123,10 @@ button {
 .floating-label-container {
   position: relative;
   width: 100%;
-  padding: 2px;
+}
+.form-grid-single-col .floating-label-container {
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 .floating-label-container .label {
   position: absolute;
@@ -132,10 +140,11 @@ button {
   pointer-events: none;
   white-space: nowrap;
   border-radius: var(--border-radius);
+  font-size: 14px;
 }
 .floating-label-container .input {
-  height: 40px;
   width: 100%;
+  font-size: 14px;
 }
 .floating-label-container textarea.input {
   height: auto;
@@ -150,10 +159,10 @@ button {
   top: 0;
   left: 5px;
   transform-origin: top left;
-  transform: translateY(-35%) scale(0.75);
+  transform: translateY(-30%) scale(0.75);
   color: var(--color-primary);
   font-weight: 500;
-  background-color: var(--color-background);
+  background-color: var(--color-surface);
 }
 
 /* --- Specific Button Styles --- */
@@ -202,6 +211,7 @@ button {
 }
 .searchable-select > .input {
   width: 100%;
+  font-size: 14px;
 }
 .searchable-select-dropdown {
   position: absolute;
@@ -661,6 +671,7 @@ button:disabled:hover {
   z-index: 1001; /* Below popover, above modal */
   background: transparent;
 }
+
 .dynamic-buttons-container {
   display: flex;
   overflow-x: auto;
@@ -712,13 +723,16 @@ button:disabled:hover {
   flex-grow: 1; /* Allow the list to take up remaining space */
 }
 
-/* Make sure this is present for click-outside-to-close */
-.modal-overlay-transparent {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1001; /* Below popover, above modal */
-  background: transparent;
+/* --- Train Component Scroll --- */
+.train-data-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Necessary for flex-grow to work in a flex column */
+}
+
+.train-list-container {
+  flex-grow: 1; /* Allows the container to fill available space */
+  overflow-y: auto; /* Adds a scrollbar only when needed */
+  padding-right: 5px; /* Prevents scrollbar from overlapping content */
+  min-height: 100px; /* Give it a minimum height */
 }

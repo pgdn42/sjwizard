@@ -1,12 +1,18 @@
 // src/components/Notes.tsx
 
 import { FloatingLabel } from "./FloatingLabel";
-import TrashcanIcon from "../assets/trashcanIcon";
-import type { FormData, ModuleCopyConfig } from "../types"; // <-- Import FormData
+import type { ModuleCopyConfig } from "../types"; // <-- Import FormData
 import { DynamicButtonRow } from "./DynamicButtonRow";
 
 interface NotesProps {
-  data: FormData;
+  data: {
+    ersattning: any;
+    ticket: any;
+    merkostnader: any;
+    templates: any;
+    notes: any;
+    train: any;
+  };
   onChange: (field: string, value: string) => void;
   onClear: () => void;
   customButtons: ModuleCopyConfig;

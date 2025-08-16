@@ -10,12 +10,7 @@ import type { CopyConfig, CustomButton } from "../types";
 import { ButtonListItem } from "./ButtonListItem";
 import { IconPickerPopover } from "./IconPickerPopover";
 import { iconMap } from "../assets/iconLibrary";
-
-const moduleNames: { [key: string]: string } = {
-  ersattning: "Ersättning",
-  merkostnader: "Merkostnader",
-  notes: "Noteringar",
-};
+import { moduleNames } from "../data/templateFields";
 
 const defaultNewButton: Omit<CustomButton, "id" | "template"> = {
   label: "New Button",

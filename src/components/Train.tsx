@@ -1,5 +1,8 @@
-import type { ModuleCopyConfig } from "../types";
+import { useState, useEffect, useMemo } from "react"; // Add useState and useEffect
+import type { DocumentData } from "firebase/firestore"; // Import DocumentData
+import type { ModuleCopyConfig, FormData } from "../types";
 import { DynamicButtonRow } from "./DynamicButtonRow";
+import { onUserCollectionUpdate } from "../services/firestoreService"; // Import the listener
 
 const MapIcon = () => (
   <svg
@@ -22,78 +25,129 @@ const MapIcon = () => (
   </svg>
 );
 
+interface TrainItemData {
+  departureStation: string;
+  arrivalStation: string;
+  departureDate: string;
+  delay: number;
+  trainNumber: string;
+}
+const getDelayColor = (delay: number) => {
+  if (delay >= 240) return "#ff00006e"; // Red
+  if (delay >= 120) return "#ff3c0077"; // Orange
+  if (delay >= 60) return "#ffc40077"; // Yellow
+  return "#4e4e4e7a"; // Gray
+};
+
 const TrainItem = ({
-  from,
-  to,
-  time,
+  departureStation,
+  arrivalStation,
+  departureDate,
   delay,
-  isUrgent,
-}: {
-  from: string;
-  to: string;
-  time: string;
-  delay: string;
-  isUrgent: boolean;
-}) => (
+  trainNumber,
+}: TrainItemData) => (
   <div
     style={{
-      backgroundColor: isUrgent ? "#FF5722" : "#4E4E4E", // A vibrant orange for urgent, and a dark grey for normal
+      backgroundColor: getDelayColor(delay),
       color: "white",
       padding: "5px 8px",
       borderRadius: "4px",
       marginBottom: "5px",
       display: "flex",
       justifyContent: "space-between",
-      borderLeft: `4px solid ${isUrgent ? "#FF5722" : "var(--color-primary)"}`, // Use accent color for border
+      borderLeft: `4px solid ${getDelayColor(delay)}`,
     }}
   >
-    <div>
+    <div style={{ width: "100%", overflow: "hidden", fontSize: "14px" }}>
       <div>
         <strong>
-          {from} - {to}
+          {departureStation || "N/A"} - {arrivalStation || "N/A"}
         </strong>
       </div>
-      <small>{time}</small>
+      <small>
+        Tåg: {trainNumber} - {departureDate}
+      </small>
+      <strong style={{ float: "right" }}>{delay} min</strong>
     </div>
-    <span style={{ fontWeight: "bold" }}>{delay}</span>
   </div>
 );
 
-interface TicketProps {
-  data: {
-    ersattning: any;
-    ticket: {
-      bookingNumber: string;
-      cost: string;
-      cardNumber: string;
-    };
-    merkostnader: any;
-    templates: any;
-    notes: any;
-    train: any;
-  };
+interface TrainProps {
+  data: FormData;
   customButtons: ModuleCopyConfig;
+  userId: string; // Expect the user ID as a prop
 }
-export function Train({ data, customButtons }: TicketProps) {
-  const trains = [
-    {
-      from: "Stockholm C",
-      to: "Malmö C",
-      time: "2024-12-18 1",
-      delay: "138 min",
-      isUrgent: true,
-    },
-    {
-      from: "Linköping C",
-      to: "Malmö C",
-      time: "2024-12-16 1",
-      delay: "107 min",
-      isUrgent: false,
-    },
-  ];
+
+export function Train({ data, customButtons, userId }: TrainProps) {
+  const [delayedTrains, setDelayedTrains] = useState<DocumentData[]>([]);
+  const currentTrain = data.ersattning;
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Listen for real-time updates to the delayedTrains collection for the current user
+    const unsubscribe = onUserCollectionUpdate(
+      "delayedTrains",
+      userId,
+      (fetchedTrains) => {
+        // Sort trains by creation date, newest first
+        const sortedTrains = fetchedTrains.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setDelayedTrains(sortedTrains);
+      }
+    );
+
+    // Clean up the listener when the component unmounts
+    return () => unsubscribe();
+  }, [userId]);
+
+  const sortedTrains = useMemo(() => {
+    const getScore = (train: DocumentData) => {
+      // Rule 1 (Top Priority): Same train number, date, and route.
+      if (
+        currentTrain.trainNumber &&
+        train.trainNumber === currentTrain.trainNumber &&
+        currentTrain.departureDate &&
+        train.departureDate === currentTrain.departureDate &&
+        currentTrain.departureStation &&
+        train.departureStation === currentTrain.departureStation &&
+        currentTrain.arrivalStation &&
+        train.arrivalStation === currentTrain.arrivalStation
+      ) {
+        return 100; // Highest score for a perfect match
+      }
+
+      // Rule 2 (Second Priority): Same train number and date.
+      if (
+        currentTrain.trainNumber &&
+        train.trainNumber === currentTrain.trainNumber &&
+        currentTrain.departureDate &&
+        train.departureDate === currentTrain.departureDate
+      ) {
+        return 50; // Medium score for a likely match
+      }
+
+      return 0; // No significant match
+    };
+
+    return [...delayedTrains].sort((a, b) => {
+      const scoreA = getScore(a);
+      const scoreB = getScore(b);
+
+      // If scores are different, sort by score (higher scores first)
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      // If scores are the same, use creation date as a tie-breaker (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [delayedTrains, currentTrain]);
 
   return (
-    <div className="section-container">
+    <div className="section-container train-data-container">
       <div className="section-header">
         <span className="section-title">Tåg</span>
         <div className="buttons-wrapper">
@@ -103,10 +157,24 @@ export function Train({ data, customButtons }: TicketProps) {
           <MapIcon />
         </button>
       </div>
-      <div>
-        {trains.map((train, index) => (
-          <TrainItem key={index} {...train} />
-        ))}
+      <div className="train-list-container">
+        {sortedTrains.length > 0 ? (
+          sortedTrains.map((train) => (
+            <TrainItem
+              key={train.id}
+              departureStation={train.departureStation}
+              arrivalStation={train.arrivalStation}
+              departureDate={train.departureDate}
+              delay={train.delay}
+              isUrgent={train.delay > 60}
+              trainNumber={train.trainNumber}
+            />
+          ))
+        ) : (
+          <p style={{ textAlign: "center", color: "var(--color-placeholder)" }}>
+            No saved trains.
+          </p>
+        )}
       </div>
     </div>
   );

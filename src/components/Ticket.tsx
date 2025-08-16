@@ -5,11 +5,7 @@ import type { ModuleCopyConfig } from "../types";
 interface TicketProps {
   data: {
     ersattning: any;
-    ticket: {
-      bookingNumber: string;
-      cost: string;
-      cardNumber: string;
-    };
+    ticket: any;
     merkostnader: any;
     templates: any;
     notes: any;
