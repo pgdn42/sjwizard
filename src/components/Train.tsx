@@ -166,7 +166,6 @@ export function Train({ data, customButtons, userId }: TrainProps) {
               arrivalStation={train.arrivalStation}
               departureDate={train.departureDate}
               delay={train.delay}
-              isUrgent={train.delay > 60}
               trainNumber={train.trainNumber}
             />
           ))
