@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { SearchableSelect } from "./SearchableSelect";
 import PencilIcon from "../assets/PencilIcon";
 import {
@@ -8,6 +8,9 @@ import {
 } from "../services/firestoreService";
 import { DynamicButtonRow } from "./DynamicButtonRow";
 import type { ModuleCopyConfig } from "../types";
+import { allFieldsAsOptions } from "../data/templateFields";
+import { FieldPickerPopover } from "./FieldPickerPopover";
+import { getCaretCoordinates } from "../utils"; // We will add this utility function next
 
 // Define the shape of a template object
 interface TemplateData {
@@ -56,6 +59,11 @@ export function Templates({
     null
   );
 
+  const [isFieldPickerOpen, setFieldPickerOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [triggerPosition, setTriggerPosition] = useState(0);
+
   const openModal = () => {
     const selected = allTemplates.find((t) => t.id === selectedTemplateId);
     const templateToEdit = selected || { id: "", label: "", content: "" };
@@ -82,6 +90,48 @@ export function Templates({
   const handleFieldChange = (field: "label" | "content", value: string) => {
     const current = activeTemplate || { id: "", label: "", content: "" };
     setActiveTemplate({ ...current, [field]: value });
+
+    // --- NEW: Trigger logic ---
+    if (field === "content" && contentTextareaRef.current) {
+      const textarea = contentTextareaRef.current;
+      const cursorPos = textarea.selectionStart;
+      const lastChar = value[cursorPos - 1];
+
+      if (lastChar === "@") {
+        setTriggerPosition(cursorPos); // Save where the '@' was typed
+        const coords = getCaretCoordinates(textarea, cursorPos);
+        setPopoverPosition({ top: coords.top + 20, left: coords.left });
+        setFieldPickerOpen(true);
+      }
+    }
+  };
+
+  // --- NEW: Handler for when a field is selected from the popover ---
+  const handleFieldSelect = (selectedValue: string) => {
+    if (!contentTextareaRef.current || !activeTemplate) return;
+
+    const textarea = contentTextareaRef.current;
+    const originalContent = activeTemplate.content;
+    const placeholder = `{${selectedValue}}`;
+
+    // Replace the '@' at the trigger position with the full placeholder
+    const newContent =
+      originalContent.slice(0, triggerPosition - 1) +
+      placeholder +
+      originalContent.slice(triggerPosition);
+
+    // Update state
+    handleFieldChange("content", newContent);
+
+    // Close the picker
+    setFieldPickerOpen(false);
+
+    // Set focus back to the textarea and move cursor to the end of the inserted text
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = triggerPosition - 1 + placeholder.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   // --- Modal Action Handlers ---
@@ -208,7 +258,8 @@ export function Templates({
 
               <label>Content</label>
               <textarea
-                placeholder="Template content with {placeholders}..."
+                ref={contentTextareaRef}
+                placeholder="Template content... type @ to insert a field"
                 rows={8}
                 value={activeTemplate?.content || ""}
                 onChange={(e) => handleFieldChange("content", e.target.value)}
@@ -234,6 +285,22 @@ export function Templates({
               <button onClick={() => setModalOpen(false)}>Cancel</button>
             </div>
           </div>
+        </div>
+      )}
+      {isFieldPickerOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: popoverPosition.top,
+            left: popoverPosition.left,
+            zIndex: 1002,
+          }}
+        >
+          <FieldPickerPopover
+            fields={allFieldsAsOptions}
+            onSelect={handleFieldSelect}
+            onClose={() => setFieldPickerOpen(false)}
+          />
         </div>
       )}
     </>

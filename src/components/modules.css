@@ -264,6 +264,7 @@ button {
   margin-top: auto;
   padding-top: 15px;
   border-top: 1px solid var(--color-border);
+  gap: 10px;
 }
 .modal-actions-left {
   display: flex;
@@ -328,7 +329,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: var(--color-background);
+  background-color: var(--color-surface);
   padding: 8px;
   border-radius: var(--border-radius);
 }
@@ -680,4 +681,44 @@ button:disabled:hover {
 .buttons-wrapper {
   flex: 1; /* Shorthand for: flex-grow: 1, flex-shrink: 1, flex-basis: 0% */
   min-width: 0; /* Allows the wrapper to shrink below its content size */
+}
+/* --- Field Picker Popover --- */
+.field-picker-popover {
+  position: fixed; /* Use fixed to appear above the modal overlay */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1002; /* Higher than the modal */
+  width: 300px;
+  max-height: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.field-picker-popover .input {
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  margin-bottom: 4px;
+}
+
+.field-picker-popover .searchable-select-dropdown {
+  position: static; /* Override absolute positioning */
+  width: auto;
+  border: none;
+  max-height: 200px; /* Let it scroll inside the popover */
+  box-shadow: none;
+  margin: 0;
+  flex-grow: 1; /* Allow the list to take up remaining space */
+}
+
+/* Make sure this is present for click-outside-to-close */
+.modal-overlay-transparent {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1001; /* Below popover, above modal */
+  background: transparent;
 }

@@ -13,14 +13,7 @@ import { buildStringFromTemplate } from "../utils";
 import { ManageButtonsTab } from "./ManageButtonsTab";
 
 // --- Data ---
-const moduleNames: { [key: string]: string } = {
-  ersattning: "Ersättning",
-  merkostnader: "Merkostnader",
-  ticket: "Biljett",
-  train: "Tåg",
-  templates: "Mallar",
-  notes: "Noteringar",
-};
+import { moduleNames, allModuleParts } from "../data/templateFields";
 const placeholderData: { [key: string]: any } = {
   ersattning: {
     caseNumber: "1-23456789",
@@ -44,115 +37,6 @@ const placeholderData: { [key: string]: any } = {
     newBookingNumber: "NEW567",
     extraNote: "Extra info",
     notesContent: "This is a note.",
-  },
-};
-const allModuleParts: { [key: string]: { [id: string]: CopyPart } } = {
-  ersattning: {
-    caseNumber: {
-      id: "caseNumber",
-      label: "Ärendenummer",
-      type: "field",
-      enabled: true,
-    },
-    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
-    trainNumber: {
-      id: "trainNumber",
-      label: "Tågnummer",
-      type: "field",
-      enabled: true,
-    },
-    departureDate: {
-      id: "departureDate",
-      label: "Avgångsdatum",
-      type: "field",
-      enabled: true,
-    },
-    departureStation: {
-      id: "departureStation",
-      label: "Avgångsstation",
-      type: "field",
-      enabled: true,
-    },
-    arrivalStation: {
-      id: "arrivalStation",
-      label: "Ankomststation",
-      type: "field",
-      enabled: true,
-    },
-    delay: { id: "delay", label: "Försening", type: "field", enabled: true },
-    producer: {
-      id: "producer",
-      label: "Producent",
-      type: "field",
-      enabled: true,
-    },
-    datetime: {
-      id: "datetime",
-      label: "Current Date/Time",
-      type: "datetime",
-      enabled: true,
-    },
-  },
-  merkostnader: {
-    caseNumber: {
-      id: "caseNumber",
-      label: "Ärendenummer",
-      type: "field",
-      enabled: true,
-    },
-    category: {
-      id: "category",
-      label: "Kategori",
-      type: "field",
-      enabled: true,
-    },
-    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
-    compensation: {
-      id: "compensation",
-      label: "Ersättning",
-      type: "field",
-      enabled: true,
-    },
-  },
-  ticket: {
-    bookingNumber: {
-      id: "bookingNumber",
-      label: "Bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    cardNumber: {
-      id: "cardNumber",
-      label: "Kortnummer",
-      type: "field",
-      enabled: true,
-    },
-    cost: {
-      id: "cost",
-      label: "Beställningsnummer",
-      type: "field",
-      enabled: true,
-    },
-  },
-  notes: {
-    bookingNumber: {
-      id: "bookingNumber",
-      label: "Bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    newBookingNumber: {
-      id: "newBookingNumber",
-      label: "Nytt bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    extraNote: {
-      id: "extraNote",
-      label: "Extra notering",
-      type: "field",
-      enabled: true,
-    },
   },
 };
 
