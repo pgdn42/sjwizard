@@ -1,20 +1,32 @@
+export interface ErsattningData {
+  id?: string;
+  caseNumber?: string; // Now optional for sub-cases
+  caseNumbers?: string[]; // New: for sub-cases
+  decision: string;
+  trainNumber: string;
+  departureDate: string;
+  departureStation: string;
+  arrivalStation: string;
+  delay: string;
+  producer: string;
+}
+
+export interface MerkostnadData {
+  id?: string;
+  caseNumber: string;
+  category: string;
+  decision: string;
+  compensation: string;
+}
+
 export interface FormData {
-  ersattning: {
-    caseNumber: string;
-    decision: string;
-    trainNumber: string;
-    departureDate: string;
-    departureStation: string;
-    arrivalStation: string;
-    delay: string;
-    producer: string;
+  ersattning: ErsattningData & {
+    // Use the base type
+    subCases: ErsattningData[]; // Add an array for sub-cases
   };
   ticket: { bookingNumber: string; cardNumber: string; cost: string };
-  merkostnader: {
-    caseNumber: string;
-    category: string;
-    decision: string;
-    compensation: string;
+  merkostnader: MerkostnadData & {
+    subCases: MerkostnadData[];
   };
   templates: { selectedTemplate: string; templateContent: string };
   notes: {
@@ -24,6 +36,10 @@ export interface FormData {
     notesContent: string;
   };
   train: {};
+}
+
+export interface UserSettings {
+  copyConfig: CopyConfig;
 }
 
 export interface CopyPart {

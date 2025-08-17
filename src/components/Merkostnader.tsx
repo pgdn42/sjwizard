@@ -1,12 +1,15 @@
 import { FloatingLabel } from "./FloatingLabel";
 import type { FormData, ModuleCopyConfig } from "../types";
 import { DynamicButtonRow } from "./DynamicButtonRow";
+import { MerkostnadSubModule } from "./MerkostnadSubModule";
 
 interface MerkostnaderProps {
   data: FormData; // <-- UPDATED: Expect the full FormData object
   onChange: (field: string, value: string) => void;
   onClear: () => void;
   customButtons: ModuleCopyConfig;
+  onSubCaseChange: (subCaseId: string, field: string, value: string) => void;
+  onDeleteSubCase: (subCaseId: string) => void;
 }
 
 export function Merkostnader({
@@ -14,6 +17,8 @@ export function Merkostnader({
   onChange,
   onClear,
   customButtons,
+  onSubCaseChange,
+  onDeleteSubCase,
 }: MerkostnaderProps) {
   return (
     <div className="section-container">
@@ -52,9 +57,9 @@ export function Merkostnader({
             value={data.merkostnader.category} // <-- UPDATED
             onChange={(e) => onChange("category", e.target.value)}
           >
-            <option value="food">Mat</option>
-            <option value="transport">Transport</option>
-            <option value="accommodation">Boende</option>
+            <option value="Mat">Mat</option>
+            <option value="Transport">Transport</option>
+            <option value="Hotel">Hotel</option>
           </select>
         </FloatingLabel>
 
@@ -66,6 +71,16 @@ export function Merkostnader({
           />
         </FloatingLabel>
       </div>
+      {data.merkostnader.subCases.map((subCase) => (
+        <MerkostnadSubModule
+          key={subCase.id}
+          subCase={subCase}
+          onSubCaseChange={(field, value) =>
+            onSubCaseChange(subCase.id!, field, value)
+          }
+          onDelete={() => onDeleteSubCase(subCase.id!)}
+        />
+      ))}
     </div>
   );
 }

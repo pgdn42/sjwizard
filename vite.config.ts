@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
+      // Define multiple entry points
+      input: {
+        main: "index.html",
+        content: "src/content/index.ts",
+      },
       output: {
         // This is crucial for Chrome extensions
         entryFileNames: `assets/[name].js`,

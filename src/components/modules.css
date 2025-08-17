@@ -188,6 +188,9 @@ button {
 .button-svg:hover {
   color: #00c2cc;
 }
+.button-svg.active {
+  color: #00c2cc;
+}
 .toolbar-controls {
   display: flex;
   gap: 8px;
@@ -735,4 +738,22 @@ button:disabled:hover {
   overflow-y: auto; /* Adds a scrollbar only when needed */
   padding-right: 5px; /* Prevents scrollbar from overlapping content */
   min-height: 100px; /* Give it a minimum height */
+}
+/* --- Sub-Module Styles --- */
+.sub-module-container {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 10px;
+  background-color: var(
+    --color-containerbg
+  ); /* A slightly different background */
+  width: 90%;
+  margin-left: auto;
+  display: grid;
+  gap: 5px;
+}
+
+.sub-title {
+  font-size: 0.9em;
+  font-style: italic;
 }

@@ -9,7 +9,12 @@ import { Ticket } from "./components/Ticket";
 import { Train } from "./components/Train";
 import { Toolbar } from "./components/Toolbar";
 import { SettingsModal } from "./components/SettingsModal";
-import type { FormData, CopyConfig } from "./types";
+import type {
+  FormData,
+  CopyConfig,
+  ErsattningData,
+  MerkostnadData,
+} from "./types";
 import {
   onCollectionUpdate,
   getUserSettings,
@@ -22,7 +27,10 @@ import "./components/modules.css";
 import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
 import AddToListIcon from "./assets/addToListIcon";
+import MagicWandIcon from "./assets/magicWandIcon";
+import MagicWandIconFilled from "./assets/magicWandIconFilled";
 import { Auth } from "./components/Auth";
+import { defaultUserSettings } from "./data/defaultUserSettings";
 
 // --- Interfaces ---
 interface TemplateData {
@@ -38,15 +46,17 @@ interface TemplateOption {
 
 export interface UserSettings {
   copyConfig: CopyConfig;
-  // Add future settings here, e.g., theme?: "dark" | "light";
 }
+
+// --- Helper to get today's date and time in YYYY-MM-DDTHH:MM format ---
 const getTodayString = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = (today.getMonth() + 1).toString().padStart(2, "0");
-  const day = today.getDate().toString().padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const now = new Date();
+  // Adjust for the local timezone offset
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  // Return the ISO string, sliced to the correct format for the input
+  return now.toISOString().slice(0, 16);
 };
+
 // --- Initial Data ---
 const initialFormData: FormData = {
   ersattning: {
@@ -58,6 +68,7 @@ const initialFormData: FormData = {
     arrivalStation: "",
     delay: "",
     producer: "",
+    subCases: [],
   },
   ticket: { bookingNumber: "", cardNumber: "", cost: "" },
   merkostnader: {
@@ -65,6 +76,7 @@ const initialFormData: FormData = {
     category: "",
     decision: "approved",
     compensation: "",
+    subCases: [],
   },
   templates: { selectedTemplate: "", templateContent: "" },
   notes: {
@@ -76,287 +88,6 @@ const initialFormData: FormData = {
   train: {},
 };
 
-const defaultUserSettings: UserSettings = {
-  copyConfig: {
-    ersattning: [
-      {
-        id: "btn_ersattning_default",
-        label: "Default",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "caseNumber-1",
-            fieldId: "caseNumber",
-            moduleId: "ersattning",
-            label: "Ärendenummer",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "static-1",
-            label: "Static Text",
-            type: "static",
-            value: "EVF",
-            enabled: true,
-          },
-          {
-            id: "decision-1",
-            fieldId: "decision",
-            moduleId: "ersattning",
-            label: "Beslut",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "static-2",
-            label: "Static Text",
-            type: "static",
-            value: "TÅG",
-            enabled: true,
-          },
-          {
-            id: "trainNumber-1",
-            fieldId: "trainNumber",
-            moduleId: "ersattning",
-            label: "Tågnummer",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "departureDate-1",
-            fieldId: "departureDate",
-            moduleId: "ersattning",
-            label: "Avgångsdatum",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "static-4",
-            label: "Static Text",
-            type: "static",
-            value: "[",
-            enabled: true,
-          },
-          {
-            id: "datetime-1",
-            label: "Current Date/Time",
-            type: "datetime",
-            enabled: true,
-          },
-          {
-            id: "static-5",
-            label: "Static Text",
-            type: "static",
-            value: "]",
-            enabled: true,
-          },
-        ],
-      },
-    ],
-    merkostnader: [
-      {
-        id: "btn_merkostnader_approved",
-        label: "Approved",
-        icon: "CopyCheckIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-approved-1",
-            label: "Static Text",
-            type: "static",
-            value: "Godkänt ärende:",
-            enabled: true,
-          },
-          {
-            id: "caseNumber-approved-1",
-            fieldId: "caseNumber",
-            moduleId: "merkostnader",
-            label: "Ärendenummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-      {
-        id: "btn_merkostnader_denied",
-        label: "Denied",
-        icon: "CopyCrossIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-denied-1",
-            label: "Static Text",
-            type: "static",
-            value: "Nekat ärende:",
-            enabled: true,
-          },
-          {
-            id: "caseNumber-denied-1",
-            fieldId: "caseNumber",
-            moduleId: "merkostnader",
-            label: "Ärendenummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-      {
-        id: "btn_merkostnader_caseNote",
-        label: "Case Note",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-note-1",
-            label: "Static Text",
-            type: "static",
-            value: "Notering:",
-            enabled: true,
-          },
-          {
-            id: "caseNumber-note-1",
-            fieldId: "caseNumber",
-            moduleId: "merkostnader",
-            label: "Ärendenummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-    ],
-    notes: [
-      {
-        id: "btn_notes_trafikstorning",
-        label: "Trafikstörning",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-trafik-1",
-            label: "Static Text",
-            type: "static",
-            value: "Trafikstörning: Bknr",
-            enabled: true,
-          },
-          {
-            id: "bookingNumber-trafik-1",
-            fieldId: "bookingNumber",
-            moduleId: "notes",
-            label: "Bokningsnummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-      {
-        id: "btn_notes_byteAvAvgang",
-        label: "Byte av avgång",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-byte-1",
-            label: "Static Text",
-            type: "static",
-            value: "Byte av avgång: Gammalt bknr",
-            enabled: true,
-          },
-          {
-            id: "bookingNumber-byte-1",
-            fieldId: "bookingNumber",
-            moduleId: "notes",
-            label: "Bokningsnummer",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "static-byte-2",
-            label: "Static Text",
-            type: "static",
-            value: ", nytt bknr",
-            enabled: true,
-          },
-          {
-            id: "newBookingNumber-byte-1",
-            fieldId: "newBookingNumber",
-            moduleId: "notes",
-            label: "Nytt bokningsnummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-      {
-        id: "btn_notes_undantagsaterkop",
-        label: "Undantagsåterköp",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "static-undantag-1",
-            label: "Static Text",
-            type: "static",
-            value: "Undantagsåterköp: Bknr",
-            enabled: true,
-          },
-          {
-            id: "bookingNumber-undantag-1",
-            fieldId: "bookingNumber",
-            moduleId: "notes",
-            label: "Bokningsnummer",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-    ],
-    ticket: [
-      {
-        id: "btn_ticket_copy",
-        label: "Copy Ticket",
-        icon: "CopyIcon",
-        type: "copy",
-        displayType: "icon",
-        template: [
-          {
-            id: "bookingNumber-ticket-1",
-            fieldId: "bookingNumber",
-            moduleId: "ticket",
-            label: "Bokningsnummer",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "cardNumber-ticket-1",
-            fieldId: "cardNumber",
-            moduleId: "ticket",
-            label: "Kortnummer",
-            type: "field",
-            enabled: true,
-          },
-          {
-            id: "cost-ticket-1",
-            fieldId: "cost",
-            moduleId: "ticket",
-            label: "Kostnad",
-            type: "field",
-            enabled: true,
-          },
-        ],
-      },
-    ],
-    train: [],
-  },
-};
-
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -365,6 +96,7 @@ function App() {
   const [userSettings, setUserSettings] =
     useState<UserSettings>(defaultUserSettings);
   const [allTemplates, setAllTemplates] = useState<TemplateData[]>([]);
+  const [isExtractionEnabled, setExtractionEnabled] = useState(false);
 
   // Effect to listen for auth state changes
   useEffect(() => {
@@ -378,7 +110,7 @@ function App() {
   useEffect(() => {
     if (!currentUser) {
       setAllTemplates([]);
-      setUserSettings(defaultUserSettings); // Reset to default on logout
+      setUserSettings(defaultUserSettings);
       setIsLoading(false);
       return;
     }
@@ -414,12 +146,202 @@ function App() {
     return () => unsubscribeTemplates();
   }, [currentUser]);
 
+  useEffect(() => {
+    const messageListener = (message: any) => {
+      if (message.type !== "EXTRACTED_VALUES") return;
+
+      const scrapedData = message.payload;
+      console.log("Received data:", scrapedData);
+
+      setFormData((prevData) => {
+        // Create a deep copy to safely modify nested state
+        const newData = JSON.parse(JSON.stringify(prevData));
+        const { caseType, mainCaseNumber, caseNumber, ...restOfData } =
+          scrapedData;
+
+        // Helper to get a "signature" of a case for merging Ersättning cases
+        const getSignature = (caseData: any) =>
+          [
+            caseData.trainNumber,
+            caseData.departureDate,
+            caseData.departureStation,
+            caseData.arrivalStation,
+          ].join("|");
+
+        // --- SUB-CASE LOGIC (A Huvudärende number was found) ---
+        if (mainCaseNumber && caseNumber) {
+          // Check if this is a Merkostnad sub-case
+          const isMerkostnadSubCase = caseType === "Kundserviceärende";
+
+          if (isMerkostnadSubCase) {
+            newData.merkostnader.caseNumber = mainCaseNumber;
+            let subCase = newData.merkostnader.subCases.find(
+              (sc: MerkostnadData) => sc.caseNumber === caseNumber
+            );
+
+            if (subCase) {
+              // If it exists, update it
+              Object.assign(subCase, restOfData);
+              if (scrapedData.underkategori)
+                subCase.category = scrapedData.underkategori;
+              // Rule 2: Update compensation for existing sub-case
+              if (scrapedData.compensation)
+                subCase.compensation = scrapedData.compensation;
+            } else {
+              // If not, create it
+              newData.merkostnader.subCases.push({
+                id: `subcase-merk-${Date.now()}`,
+                caseNumber: caseNumber,
+                category: scrapedData.underkategori || "food",
+                decision: "approved",
+                // Rule 2: Set compensation for new sub-case
+                compensation: scrapedData.compensation || "",
+              });
+            }
+            // Always update the related Ersättning case from the description
+            if (scrapedData.relatedErsattningCase) {
+              newData.ersattning.caseNumber = scrapedData.relatedErsattningCase;
+            }
+          }
+          // Otherwise, assume it's an Ersättning sub-case
+          else {
+            const ersattning = newData.ersattning;
+            ersattning.caseNumber = mainCaseNumber;
+
+            let subCaseToUpdate = ersattning.subCases.find(
+              (sc: ErsattningData) => sc.caseNumbers?.includes(caseNumber)
+            );
+
+            if (subCaseToUpdate) {
+              Object.assign(subCaseToUpdate, restOfData);
+            } else {
+              const newSubCase: ErsattningData = {
+                id: `subcase-${Date.now()}`,
+                caseNumbers: [caseNumber],
+                ...initialFormData.ersattning,
+                ...restOfData,
+              };
+              ersattning.subCases.push(newSubCase);
+              subCaseToUpdate = newSubCase;
+            }
+
+            if (subCaseToUpdate) {
+              const currentSignature = getSignature(subCaseToUpdate);
+              if (currentSignature !== "|||") {
+                // Don't merge empty cases
+                const mergeTarget = ersattning.subCases.find(
+                  (sc: ErsattningData) =>
+                    sc.id !== subCaseToUpdate.id &&
+                    getSignature(sc) === currentSignature
+                );
+
+                if (mergeTarget) {
+                  mergeTarget.caseNumbers = [
+                    ...new Set([
+                      ...mergeTarget.caseNumbers!,
+                      ...subCaseToUpdate.caseNumbers!,
+                    ]),
+                  ];
+                  ersattning.subCases = ersattning.subCases.filter(
+                    (sc: ErsattningData) => sc.id !== subCaseToUpdate.id
+                  );
+                }
+              }
+            }
+          }
+        }
+        // --- MAIN CASE & STANDARD CASE LOGIC ---
+        else if (caseNumber) {
+          // This handles all cases that are not sub-cases
+
+          // First, update all possible fields from the scraped data
+          const mapping = {
+            departureStation: {
+              section: "ersattning",
+              field: "departureStation",
+            },
+            arrivalStation: { section: "ersattning", field: "arrivalStation" },
+            trainNumber: { section: "ersattning", field: "trainNumber" },
+            delay: { section: "ersattning", field: "delay" },
+            departureDate: { section: "ersattning", field: "departureDate" },
+            bookingNumber: { section: "ticket", field: "bookingNumber" },
+            cost: { section: "ticket", field: "cost" },
+            cardNumber: { section: "ticket", field: "cardNumber" },
+            // Rule 2: Ensure compensation is mapped for standard cases
+            compensation: { section: "merkostnader", field: "compensation" },
+          };
+
+          Object.entries(scrapedData).forEach(([key, value]) => {
+            if (value && (mapping as any)[key]) {
+              const { section, field } = (mapping as any)[key];
+              if ((newData as any)[section]) {
+                (newData as any)[section][field] = value;
+              }
+            }
+          });
+
+          // Second, set the primary case numbers and specific fields based on case type
+          if (caseType === "Huvudärende - Merkostnad") {
+            newData.merkostnader.caseNumber = caseNumber;
+            if (scrapedData.relatedErsattningCase) {
+              newData.ersattning.caseNumber = scrapedData.relatedErsattningCase;
+            }
+          } else if (caseType === "Kundserviceärende") {
+            newData.merkostnader.caseNumber = caseNumber;
+            newData.ersattning.caseNumber =
+              scrapedData.relatedErsattningCase ||
+              newData.ersattning.caseNumber;
+            // Rule 1: Set Kategori from Underkategori
+            if (scrapedData.underkategori) {
+              newData.merkostnader.category = scrapedData.underkategori;
+            }
+          } else {
+            // This is a standard Ersättning case or Huvudärende - RTG
+            newData.ersattning.caseNumber = caseNumber;
+          }
+        }
+        return newData;
+      });
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+    return () => chrome.runtime.onMessage.removeListener(messageListener);
+  }, []);
+
   const templateOptions: TemplateOption[] = useMemo(() => {
     return allTemplates.map((template) => ({
       value: template.id,
       label: template.label,
     }));
   }, [allTemplates]);
+
+  const handleMerkostnadSubCaseChange = (
+    subCaseId: string,
+    field: string,
+    value: string
+  ) => {
+    setFormData((prevData) => {
+      const newSubCases = prevData.merkostnader.subCases.map((sc) =>
+        sc.id === subCaseId ? { ...sc, [field]: value } : sc
+      );
+      return {
+        ...prevData,
+        merkostnader: { ...prevData.merkostnader, subCases: newSubCases },
+      };
+    });
+  };
+
+  const handleDeleteMerkostnadSubCase = (subCaseId: string) => {
+    setFormData((prevData) => {
+      const newSubCases = prevData.merkostnader.subCases.filter(
+        (sc) => sc.id !== subCaseId
+      );
+      return {
+        ...prevData,
+        merkostnader: { ...prevData.merkostnader, subCases: newSubCases },
+      };
+    });
+  };
 
   const handleDataChange = (
     section: keyof FormData,
@@ -430,6 +352,37 @@ function App() {
       ...prevData,
       [section]: { ...prevData[section], [field]: value },
     }));
+  };
+
+  const handleSubCaseDataChange = (
+    subCaseId: string,
+    field: string,
+    value: string
+  ) => {
+    setFormData((prevData) => {
+      const newSubCases = prevData.ersattning.subCases.map((sc) =>
+        sc.id === subCaseId ? { ...sc, [field]: value } : sc
+      );
+      return {
+        ...prevData,
+        ersattning: {
+          ...prevData.ersattning,
+          subCases: newSubCases,
+        },
+      };
+    });
+  };
+
+  const handleDeleteSubCase = (subCaseId: string) => {
+    setFormData((prevData) => {
+      const newSubCases = prevData.ersattning.subCases.filter(
+        (sc) => sc.id !== subCaseId
+      );
+      return {
+        ...prevData,
+        ersattning: { ...prevData.ersattning, subCases: newSubCases },
+      };
+    });
   };
 
   const handleClear = (section?: keyof FormData) => {
@@ -444,8 +397,7 @@ function App() {
   };
 
   const handleClearAndSaveTrain = async () => {
-    if (!currentUser) return; // Make sure user is logged in
-
+    if (!currentUser) return;
     const {
       trainNumber,
       departureStation,
@@ -453,30 +405,46 @@ function App() {
       delay,
       departureDate,
     } = formData.ersattning;
-
-    // Basic validation: ensure we have at least a train number and delay
     if (!trainNumber.trim() || !delay.trim()) {
       alert("Please enter at least a train number and delay before saving.");
       return;
     }
-
     const trainData = {
       trainNumber,
       departureStation,
       arrivalStation,
-      delay: parseInt(delay, 10) || 0, // Store delay as a number
+      delay: parseInt(delay, 10) || 0,
       departureDate,
       ownerId: currentUser.uid,
       createdAt: new Date().toISOString(),
     };
-
     try {
       await addDocument("delayedTrains", trainData);
-      handleClear(); // Clear all fields after successful save
+      handleClear();
     } catch (error) {
       console.error("Error saving train data:", error);
       alert("Failed to save train data. Please try again.");
     }
+  };
+
+  const toggleExtraction = () => {
+    const newState = !isExtractionEnabled;
+    setExtractionEnabled(newState);
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          { type: "TOGGLE_EXTRACTION", payload: newState },
+          () => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "SJ Wizard: Could not connect to the content script. Try refreshing the Siebel page."
+              );
+            }
+          }
+        );
+      }
+    });
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -526,6 +494,13 @@ function App() {
           <SettingsIcon />
         </button>
         <button
+          className={`button-svg ${isExtractionEnabled ? "active" : ""}`}
+          title="Toggle Siebel Data Extraction"
+          onClick={toggleExtraction}
+        >
+          {isExtractionEnabled ? <MagicWandIconFilled /> : <MagicWandIcon />}
+        </button>
+        <button
           className="button-svg"
           title="Save train info and clear all fields"
           onClick={handleClearAndSaveTrain}
@@ -545,6 +520,8 @@ function App() {
         onChange={(field, value) =>
           handleDataChange("ersattning", field, value)
         }
+        onSubCaseChange={handleSubCaseDataChange}
+        onDeleteSubCase={handleDeleteSubCase}
         onClear={() => handleClear("ersattning")}
         customButtons={userSettings.copyConfig.ersattning || []}
       />
@@ -555,6 +532,8 @@ function App() {
         }
         onClear={() => handleClear("merkostnader")}
         customButtons={userSettings.copyConfig.merkostnader || []}
+        onSubCaseChange={handleMerkostnadSubCaseChange}
+        onDeleteSubCase={handleDeleteMerkostnadSubCase}
       />
       <div className="row-container">
         <div className="ticket-container">

@@ -16,25 +16,24 @@ import { ManageButtonsTab } from "./ManageButtonsTab";
 import { moduleNames, allModuleParts } from "../data/templateFields";
 const placeholderData: { [key: string]: any } = {
   ersattning: {
-    caseNumber: "1-23456789",
+    caseNumber: "1-1111111111111",
     decision: "50%",
     trainNumber: "42",
     departureDate: "2025-08-13",
     departureStation: "Stockholm C",
     arrivalStation: "Göteborg C",
     delay: "65",
-    producer: "SJ",
   },
   merkostnader: {
-    caseNumber: "1-98765432",
+    caseNumber: "1-1111111111111",
     category: "Mat",
     decision: "Godkänd",
     compensation: "150",
   },
-  ticket: { bookingNumber: "ABC1234", cardNumber: "1234", cost: "599" },
+  ticket: { bookingNumber: "WZASDFG8", cardNumber: "1098739701" },
   notes: {
-    bookingNumber: "XYZ987",
-    newBookingNumber: "NEW567",
+    bookingNumber: "WZASDFG8",
+    newBookingNumber: "WPOLKJH9",
     extraNote: "Extra info",
     notesContent: "This is a note.",
   },

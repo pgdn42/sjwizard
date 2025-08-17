@@ -1,10 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "My Awesome Extension",
+  "name": "SJ Wizard",
   "version": "1.0.0",
   "description": "A brief description of what this extension does.",
   "side_panel": {
     "default_path": "index.html"
   },
-  "permissions": ["activeTab", "storage", "sidePanel"]
+  "permissions": ["activeTab", "storage", "sidePanel"],
+  "host_permissions": [
+    "https://ba-prod.kund.adp.sj.se/siebel/app/loyalty/sve*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://ba-prod.kund.adp.sj.se/siebel/app/loyalty/sve*"],
+      "js": ["assets/content.js"]
+    }
+  ]
 }

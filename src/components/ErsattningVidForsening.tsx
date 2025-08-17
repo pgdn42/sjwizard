@@ -1,10 +1,13 @@
 import { FloatingLabel } from "./FloatingLabel";
 import type { FormData, ModuleCopyConfig } from "../types";
 import { DynamicButtonRow } from "./DynamicButtonRow";
+import { ErsattningSubModule } from "./ErsattningSubModule";
 
 interface ErsattningProps {
   data: FormData;
   onChange: (field: string, value: string) => void;
+  onSubCaseChange: (subCaseId: string, field: string, value: string) => void;
+  onDeleteSubCase: (subCaseId: string) => void; // Add delete prop
   onClear: () => void;
   customButtons: ModuleCopyConfig;
 }
@@ -12,6 +15,8 @@ interface ErsattningProps {
 export function ErsattningVidForsening({
   data,
   onChange,
+  onSubCaseChange,
+  onDeleteSubCase,
   onClear,
   customButtons,
 }: ErsattningProps) {
@@ -57,7 +62,7 @@ export function ErsattningVidForsening({
         </FloatingLabel>
         <FloatingLabel label="Avgångsdatum" className="width-small-medium">
           <input
-            type="date"
+            type="datetime-local"
             value={data.ersattning.departureDate}
             onChange={(e) => onChange("departureDate", e.target.value)}
           />
@@ -86,6 +91,16 @@ export function ErsattningVidForsening({
           />
         </FloatingLabel>
       </div>
+      {data.ersattning.subCases.map((subCase) => (
+        <ErsattningSubModule
+          key={subCase.id}
+          subCase={subCase}
+          onSubCaseChange={(field, value) =>
+            onSubCaseChange(subCase.id!, field, value)
+          }
+          onDelete={() => onDeleteSubCase(subCase.id!)} // Wire up the delete handler
+        />
+      ))}
     </div>
   );
 }
