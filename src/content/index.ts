@@ -80,7 +80,7 @@ const analyzeAndExtract = () => {
   }
 };
 
-const debouncedExtraction = debounce(analyzeAndExtract, 500);
+const debouncedExtraction = debounce(analyzeAndExtract, 50);
 
 // --- Event Listeners and Observers ---
 chrome.runtime.onMessage.addListener((message) => {
