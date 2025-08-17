@@ -7,33 +7,43 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableItem } from "./SortableItem";
+import { SortableLoopBlock } from "./SortableLoopBlock"; // Import the new component
 import type { CopyConfig, CopyPart, FormData } from "../types";
 import type { UserSettings } from "../App";
 import { buildStringFromTemplate } from "../utils";
 import { ManageButtonsTab } from "./ManageButtonsTab";
-
-// --- Data ---
 import { moduleNames, allModuleParts } from "../data/templateFields";
+
+// --- Placeholder Data ---
 const placeholderData: { [key: string]: any } = {
   ersattning: {
-    caseNumber: "1-1111111111111",
+    caseNumber: "1-23456789",
     decision: "50%",
     trainNumber: "42",
-    departureDate: "2025-08-13",
+    departureDate: "2025-08-17T20:12",
     departureStation: "Stockholm C",
     arrivalStation: "Göteborg C",
     delay: "65",
+    producer: "SJ",
+    subCases: [
+      { caseNumbers: ["SC-1"], decision: "50%", delay: "65" },
+      { caseNumbers: ["SC-2"], decision: "100%", delay: "125" },
+    ],
   },
   merkostnader: {
-    caseNumber: "1-1111111111111",
+    caseNumber: "1-98765432",
     category: "Mat",
     decision: "Godkänd",
     compensation: "150",
+    subCases: [
+      { caseNumber: "SC-M1", compensation: "100" },
+      { caseNumber: "SC-M2", compensation: "50" },
+    ],
   },
-  ticket: { bookingNumber: "WZASDFG8", cardNumber: "1098739701" },
+  ticket: { bookingNumber: "ABC1234", cardNumber: "1234", cost: "599" },
   notes: {
-    bookingNumber: "WZASDFG8",
-    newBookingNumber: "WPOLKJH9",
+    bookingNumber: "XYZ987",
+    newBookingNumber: "NEW567",
     extraNote: "Extra info",
     notesContent: "This is a note.",
   },
@@ -65,10 +75,11 @@ export function SettingsModal({
   const [partToAdd, setPartToAdd] = useState<string>("static");
 
   const allFieldsAsOptions = useMemo(() => {
-    const options = [
-      { value: "static", label: "Static Text" },
-      { value: "linebreak", label: "Line Break" },
-    ];
+    const options: {
+      value: string;
+      label: string;
+      context?: "root" | "item";
+    }[] = [];
     for (const moduleId in allModuleParts) {
       const moduleName = moduleNames[moduleId] || "Unknown Module";
       const parts = allModuleParts[moduleId as keyof typeof allModuleParts];
@@ -82,6 +93,13 @@ export function SettingsModal({
     }
     return options;
   }, []);
+
+  const subCaseFieldsAsOptions = useMemo(() => {
+    return allFieldsAsOptions.map((opt) => ({
+      ...opt,
+      label: `Sub-Case ${opt.label}`,
+    }));
+  }, [allFieldsAsOptions]);
 
   useEffect(() => {
     if (isOpen) {
@@ -113,24 +131,22 @@ export function SettingsModal({
   );
 
   const previewText = useMemo(() => {
-    const fullPlaceholderData = Object.keys(placeholderData).reduce(
-      (acc, key) => {
-        return { ...acc, [key]: placeholderData[key] };
-      },
-      {} as FormData
+    return buildStringFromTemplate(
+      currentTemplateConfig,
+      placeholderData as FormData
     );
-
-    return buildStringFromTemplate(currentTemplateConfig, fullPlaceholderData);
   }, [currentTemplateConfig]);
 
   if (!isOpen) return null;
 
   const updateTemplateForSelectedButton = (newTemplate: CopyPart[]) => {
     const newButtons = [...currentButtons];
-    newButtons[selectedButtonIndex] = {
-      ...newButtons[selectedButtonIndex],
-      template: newTemplate,
-    };
+    if (newButtons[selectedButtonIndex]) {
+      newButtons[selectedButtonIndex] = {
+        ...newButtons[selectedButtonIndex],
+        template: newTemplate,
+      };
+    }
 
     setInternalSettings((prev) => ({
       ...prev,
@@ -182,6 +198,17 @@ export function SettingsModal({
         lineBreakCount: 1,
         enabled: true,
       };
+    } else if (partToAdd.startsWith("loop_")) {
+      const source = partToAdd.split("_")[1] as keyof FormData;
+      newPart = {
+        id: `loop-${Date.now()}`,
+        label: `Loop over ${moduleNames[source]} Sub-Cases`,
+        type: "loop",
+        enabled: true,
+        loopSource: source,
+        loopOver: "subCases",
+        loopTemplate: [],
+      };
     } else {
       const [moduleId, fieldId] = partToAdd.split(".");
       const partTemplate =
@@ -192,6 +219,7 @@ export function SettingsModal({
           id: `${partToAdd}-${Date.now()}`,
           fieldId: fieldId,
           moduleId: moduleId as keyof FormData,
+          context: "root",
         };
       }
     }
@@ -206,25 +234,21 @@ export function SettingsModal({
     updateTemplateForSelectedButton(newTemplate);
   };
 
-  const handleSave = () => {
-    onSave(internalSettings);
-  };
-
+  const handleSave = () => onSave(internalSettings);
   const handleSaveAndClose = () => {
     onSave(internalSettings);
     onClose();
   };
 
   const handleClose = () => {
-    if (hasChanges) {
-      if (
-        window.confirm(
-          "You have unsaved changes. Are you sure you want to close?"
-        )
-      ) {
-        onClose();
-      }
-    } else {
+    if (
+      hasChanges &&
+      window.confirm(
+        "You have unsaved changes. Are you sure you want to close?"
+      )
+    ) {
+      onClose();
+    } else if (!hasChanges) {
       onClose();
     }
   };
@@ -314,7 +338,7 @@ export function SettingsModal({
               </div>
               <div className="settings-preview">
                 <label>Live Preview</label>
-                <textarea value={previewText} readOnly rows={2}></textarea>
+                <textarea value={previewText} readOnly rows={4}></textarea>
               </div>
               <div className="settings-rows-container">
                 <DndContext
@@ -325,16 +349,29 @@ export function SettingsModal({
                     items={itemIds}
                     strategy={verticalListSortingStrategy}
                   >
-                    {currentTemplateConfig.map((part) => (
-                      <SortableItem
-                        key={part.id}
-                        part={part}
-                        onPartChange={(changedPart) =>
-                          handlePartChange(part.id, changedPart)
-                        }
-                        onDelete={handleDeletePart}
-                      />
-                    ))}
+                    {currentTemplateConfig.map((part) =>
+                      part.type === "loop" ? (
+                        <SortableLoopBlock
+                          key={part.id}
+                          part={part}
+                          onUpdate={(updatedPart) =>
+                            handlePartChange(part.id, updatedPart)
+                          }
+                          onDelete={() => handleDeletePart(part.id)}
+                          allFieldsAsOptions={allFieldsAsOptions}
+                          subCaseFieldsAsOptions={subCaseFieldsAsOptions}
+                        />
+                      ) : (
+                        <SortableItem
+                          key={part.id}
+                          part={part}
+                          onPartChange={(changedPart) =>
+                            handlePartChange(part.id, changedPart)
+                          }
+                          onDelete={() => handleDeletePart(part.id)}
+                        />
+                      )
+                    )}
                   </SortableContext>
                 </DndContext>
               </div>
@@ -343,11 +380,25 @@ export function SettingsModal({
                   value={partToAdd}
                   onChange={(e) => setPartToAdd(e.target.value)}
                 >
-                  {allFieldsAsOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  <optgroup label="Structure">
+                    <option value="loop_ersattning">
+                      Ersättning Sub-Case Loop
                     </option>
-                  ))}
+                    <option value="loop_merkostnader">
+                      Merkostnad Sub-Case Loop
+                    </option>
+                  </optgroup>
+                  <optgroup label="General">
+                    <option value="static">Static Text</option>
+                    <option value="linebreak">Line Break</option>
+                  </optgroup>
+                  <optgroup label="Main Case Fields">
+                    {allFieldsAsOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
                 <button onClick={handleAddPart}>Add</button>
               </div>

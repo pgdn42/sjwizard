@@ -3,6 +3,7 @@
 :root {
   --color-background: #121212;
   --color-containerbg: #242424;
+  --color-containerbg2: #0b0b0b;
   --color-surface: #000000;
   --color-primary: #b84e26;
   --color-primary-hover: #b84d2644;
@@ -756,4 +757,33 @@ button:disabled:hover {
 .sub-title {
   font-size: 0.9em;
   font-style: italic;
+}
+
+/* --- Loop Block Styles --- */
+.settings-loop-block {
+  background-color: var(--color-containerbg2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loop-block-header {
+  background-color: transparent;
+  padding: 0;
+}
+
+.loop-block-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 10px;
+}
+
+.loop-block-footer {
+  border-top: 1px solid var(--color-border);
+  margin-top: 0;
+  padding: 8px 10px 0 10px;
 }

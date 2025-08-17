@@ -48,10 +48,15 @@ export interface CopyPart {
   moduleId?: keyof FormData;
   label: string;
   enabled: boolean;
-  type: "field" | "static" | "datetime" | "linebreak";
+  type: "field" | "static" | "datetime" | "linebreak" | "loop";
   value?: string;
   appendPeriod?: boolean;
   lineBreakCount?: number;
+
+  context?: "root" | "item"; // 'root' for main case, 'item' for sub-case
+  loopSource?: keyof FormData; // e.g., 'ersattning'
+  loopOver?: "subCases"; // The array to loop over, e.g., 'subCases'
+  loopTemplate?: CopyPart[]; // The inner template for each item
 }
 
 export type CopyTemplate = CopyPart[];

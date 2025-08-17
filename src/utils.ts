@@ -35,18 +35,18 @@ export function replaceTemplateVariables(
 
   return replacedString;
 }
-
 /**
  * Generates a string from a copy template and form data.
- * @param template The array of CopyPart objects defining the template.
+ * This version supports looping over sub-case arrays.
+ * @param template The array of CopyPart objects.
  * @param formData The full data object.
- * @param separator The character to join parts with (defaults to a space).
+ * @param contextData The data for the current loop item (optional).
  * @returns The final, formatted string.
  */
 export function buildStringFromTemplate(
   template: CopyPart[],
   formData: FormData,
-  separator: string = " "
+  contextData: any = null // Pass sub-case data here during loops
 ): string {
   const now = new Date();
   const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
@@ -56,51 +56,84 @@ export function buildStringFromTemplate(
     .toString()
     .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
-  const stringParts = template
-    .filter((part) => part.enabled)
-    .map((part) => {
-      let value = "";
-      switch (part.type) {
-        case "field":
-          if (part.moduleId && part.fieldId) {
-            // @ts-ignore
-            value = formData[part.moduleId]?.[part.fieldId] || "";
-          }
-          if (value && part.appendPeriod) {
-            value += ".";
-          }
-          break;
-        case "static":
-          value = part.value || "";
-          break;
-        case "datetime":
-          value = formattedDateTime;
-          break;
-        case "linebreak":
-          value = "\n".repeat(part.lineBreakCount || 1);
-          break;
-      }
-      return value;
-    });
+  const stringParts: string[] = [];
 
+  for (const part of template) {
+    if (!part.enabled) continue;
+    let value = "";
+
+    switch (part.type) {
+      case "field":
+        const dataSource = part.context === "item" ? contextData : formData;
+        if (part.moduleId && part.fieldId && dataSource) {
+          // @ts-ignore
+          value = dataSource[part.moduleId]?.[part.fieldId] || "";
+        }
+        if (value && part.appendPeriod) {
+          value += ".";
+        }
+        break;
+
+      case "static":
+        value = part.value || "";
+        break;
+
+      case "datetime":
+        value = formattedDateTime;
+        break;
+
+      case "linebreak":
+        value = "\n".repeat(part.lineBreakCount || 1);
+        break;
+
+      case "loop":
+        if (part.loopSource && part.loopOver && part.loopTemplate) {
+          // @ts-ignore
+          const loopArray = formData[part.loopSource]?.[part.loopOver] || [];
+          const loopResults = loopArray.map((item: any) =>
+            // RECURSIVE CALL: Build the string for the inner template
+            // Pass the current sub-case 'item' as the contextData
+            buildStringFromTemplate(part.loopTemplate!, formData, {
+              [part.loopSource!]: item,
+            })
+          );
+          value = loopResults.join("\n");
+        }
+        break;
+    }
+    stringParts.push(value);
+  }
+
+  // Smarter joining logic to handle line breaks correctly
   let result = "";
   for (let i = 0; i < stringParts.length; i++) {
     const currentPart = stringParts[i];
     if (currentPart.length === 0) continue;
+
+    // If current part is a line break, just add it.
+    if (template[i].type === "linebreak" || template[i].type === "loop") {
+      result += currentPart;
+      continue;
+    }
+
+    // Add the part's value
     result += currentPart;
+
+    // Add a space if the next part is not a line break or loop
     if (i < stringParts.length - 1) {
-      const nextPart = stringParts[i + 1];
+      const nextPartTemplate = template[i + 1];
       if (
-        nextPart.length > 0 &&
-        !currentPart.includes("\n") &&
-        !nextPart.includes("\n")
+        nextPartTemplate.enabled &&
+        nextPartTemplate.type !== "linebreak" &&
+        nextPartTemplate.type !== "loop"
       ) {
-        result += separator;
+        result += " ";
       }
     }
   }
   return result;
 }
+
 export function getCaretCoordinates(
   element: HTMLTextAreaElement,
   position: number
