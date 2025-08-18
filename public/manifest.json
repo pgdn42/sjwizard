@@ -6,7 +6,7 @@
   "side_panel": {
     "default_path": "index.html"
   },
-  "permissions": ["activeTab", "storage", "sidePanel"],
+  "permissions": ["activeTab", "storage", "sidePanel", "tabs", "windows"],
   "host_permissions": [
     "https://ba-prod.kund.adp.sj.se/siebel/app/loyalty/sve*"
   ],

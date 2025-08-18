@@ -98,7 +98,22 @@ export function SortableItem({
       )}
 
       {(part.type === "field" || part.type === "datetime") && (
-        <span className="settings-row-label">{part.label}</span>
+        <div className="settings-row-label-group">
+          {" "}
+          {/* Wrap label and checkbox */}
+          <span className="settings-row-label">{part.label}</span>
+          {part.type === "datetime" && (
+            <div className="settings-row-inline-checkbox">
+              <input
+                type="checkbox"
+                id={`dateOnly-${part.id}`} // Unique id for the checkbox
+                checked={!!part.dateOnly}
+                onChange={(e) => onPartChange({ dateOnly: e.target.checked })}
+              />
+              <label htmlFor={`dateOnly-${part.id}`}>Date only</label>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="settings-row-controls">

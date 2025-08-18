@@ -25,14 +25,14 @@ export function DynamicButtonRow({
 }: DynamicButtonRowProps) {
   const handleButtonClick = (button: CustomButton) => {
     if (button.type === "link") {
-      let url = buildStringFromTemplate(button.template, formData, "");
+      let url = buildStringFromTemplate(button.template, formData, null, "");
       if (url) {
         // Check if the URL starts with http:// or https://
         if (!/^https?:\/\//i.test(url)) {
           // If not, prepend https://
           url = "https://" + url;
         }
-        window.open(url, "_blank", "noopener,noreferrer");
+        window.open(url, "", "width=1350,height=1000,screenX=0,screenY=500");
       }
     } else {
       const textToCopy = buildStringFromTemplate(button.template, formData);

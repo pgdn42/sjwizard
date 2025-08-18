@@ -46,7 +46,8 @@ export function replaceTemplateVariables(
 export function buildStringFromTemplate(
   template: CopyPart[],
   formData: FormData,
-  contextData: any = null // Pass sub-case data here during loops
+  contextData: any = null, // Pass sub-case data here during loops
+  separator: string = " " // <-- ADD THIS NEW ARGUMENT WITH A DEFAULT VALUE
 ): string {
   const now = new Date();
   const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
@@ -55,6 +56,10 @@ export function buildStringFromTemplate(
     .getHours()
     .toString()
     .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+  const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
 
   const stringParts: string[] = [];
 
@@ -79,7 +84,7 @@ export function buildStringFromTemplate(
         break;
 
       case "datetime":
-        value = formattedDateTime;
+        value = part.dateOnly ? formattedDate : formattedDateTime;
         break;
 
       case "linebreak":
@@ -104,22 +109,19 @@ export function buildStringFromTemplate(
     stringParts.push(value);
   }
 
-  // Smarter joining logic to handle line breaks correctly
+  // Smarter joining logic
   let result = "";
   for (let i = 0; i < stringParts.length; i++) {
     const currentPart = stringParts[i];
     if (currentPart.length === 0) continue;
 
-    // If current part is a line break, just add it.
     if (template[i].type === "linebreak" || template[i].type === "loop") {
       result += currentPart;
       continue;
     }
 
-    // Add the part's value
     result += currentPart;
 
-    // Add a space if the next part is not a line break or loop
     if (i < stringParts.length - 1) {
       const nextPartTemplate = template[i + 1];
       if (
@@ -127,7 +129,8 @@ export function buildStringFromTemplate(
         nextPartTemplate.type !== "linebreak" &&
         nextPartTemplate.type !== "loop"
       ) {
-        result += " ";
+        // --- CORRECTED: Use the new separator argument ---
+        result += separator;
       }
     }
   }

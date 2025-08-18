@@ -787,3 +787,20 @@ button:disabled:hover {
   margin-top: 0;
   padding: 8px 10px 0 10px;
 }
+.settings-row-label-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.settings-row-inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settings-row-inline-checkbox label {
+  font-size: 0.9em;
+  color: #666;
+}

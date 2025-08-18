@@ -130,12 +130,24 @@ export function SettingsModal({
     [currentTemplateConfig]
   );
 
+  // Add this new useMemo hook right above the `previewText` hook
+  const editingButton = useMemo(
+    () => currentButtons[selectedButtonIndex],
+    [currentButtons, selectedButtonIndex]
+  );
+
+  // Now, modify the existing previewText hook like this
   const previewText = useMemo(() => {
+    // Determine the separator based on the editing button's type
+    const separator = editingButton?.type === "link" ? "" : " ";
+
     return buildStringFromTemplate(
       currentTemplateConfig,
-      placeholderData as FormData
+      placeholderData as FormData,
+      null,
+      separator // Pass the correct separator here
     );
-  }, [currentTemplateConfig]);
+  }, [currentTemplateConfig, editingButton]); // Update the dependency array
 
   if (!isOpen) return null;
 

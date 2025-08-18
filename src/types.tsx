@@ -52,6 +52,7 @@ export interface CopyPart {
   value?: string;
   appendPeriod?: boolean;
   lineBreakCount?: number;
+  dateOnly?: boolean; // <-- ADD THIS LINE
 
   context?: "root" | "item"; // 'root' for main case, 'item' for sub-case
   loopSource?: keyof FormData; // e.g., 'ersattning'
