@@ -21,6 +21,7 @@ export const allModuleParts: Record<string, Record<string, FieldDef>> = {
     decision: { label: "Beslut" },
     trainNumber: { label: "Tågnummer" },
     departureDate: { label: "Avgångsdatum" },
+    departureDateWithTime: { label: "Avgångsdatum med tid" },
     departureStation: { label: "Avgångsstation" },
     arrivalStation: { label: "Ankomststation" },
     delay: { label: "Försening" },

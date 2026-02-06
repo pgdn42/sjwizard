@@ -33,7 +33,14 @@ export function DynamicButtonRow({
         if (!/^https?:\/\//i.test(url)) {
           url = "https://" + url;
         }
-        window.open(url, "", "width=1350,height=1000,screenX=0,screenY=500");
+        chrome.windows.create({
+          url: url,
+          type: "popup",
+          width: 1350,
+          height: 1000,
+          left: 0,
+          top: 500
+        });
       }
     } else {
       const textToCopy = buildStringFromTemplate(button.template, formData, contextData);

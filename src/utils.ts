@@ -79,10 +79,29 @@ export function buildStringFromTemplate(
 
   // 3. HANDLE VARIABLES (Context Aware)
   result = result.replace(/{([a-zA-Z0-9_.]+)}/g, (_: string, key: string) => {
+    let value = "";
+    
     if (contextData && key in contextData) {
-        return String(contextData[key] || "");
+        value = String(contextData[key] || "");
+    } else {
+        value = getNestedValue(formData, key);
     }
-    return getNestedValue(formData, key);
+    
+    // Handle special date formatting cases
+    if (key === "ersattning.departureDateWithTime" || key === "loop.ersattning.departureDateWithTime") {
+      // Get the actual departureDate value
+      const dateValue = contextData?.departureDate || getNestedValue(formData, "ersattning.departureDate");
+      // Replace T with space: "2025-08-17T20:12" -> "2025-08-17 20:12"
+      return dateValue ? String(dateValue).replace("T", " ") : "";
+    }
+    
+    if (key === "ersattning.departureDate" || key === "loop.ersattning.departureDate") {
+      // Extract just the date part: "2025-08-17T20:12" -> "2025-08-17"
+      const dateValue = contextData?.departureDate || value;
+      return dateValue ? String(dateValue).split("T")[0] : "";
+    }
+    
+    return value;
   });
 
   return result;

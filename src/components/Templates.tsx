@@ -1,333 +1,297 @@
-import { useState, useMemo, useRef } from "react";
-import { SearchableSelect } from "./SearchableSelect";
+// src/components/Templates.tsx
+import { useState, useMemo, useRef, useEffect } from "react";
 import PencilIcon from "../assets/PencilIcon";
-import {
-  addDocument,
-  updateDocument,
-  deleteDocument,
-} from "../services/firestoreService";
 import { DynamicButtonRow } from "./DynamicButtonRow";
 import type { ModuleCopyConfig } from "../types";
-// REMOVED: import { allFieldsAsOptions } from "../data/templateFields"; 
-import { moduleNames, allModuleParts } from "../data/templateFields"; // IMPORT THIS INSTEAD
-import { FieldPickerPopover } from "./FieldPickerPopover";
-import { getCaretCoordinates } from "../utils";
+import { replaceTemplateVariables } from "../utils";
+import { TemplateModal } from "./TemplateModal";
 
-// Define the shape of a template object
-interface TemplateData {
-  id: string;
-  label: string;
-  content: string;
-}
+// --- SVG Flags ---
+const FlagSE = () => (
+  <svg viewBox="0 0 16 10" className="flag-icon" xmlns="http://www.w3.org/2000/svg">
+    <rect width="16" height="10" fill="#006aa7" />
+    <rect width="2" height="10" x="5" fill="#fecc00" />
+    <rect width="16" height="2" y="4" fill="#fecc00" />
+  </svg>
+);
 
-// Define the shape of the props coming into this component
+const FlagGB = () => (
+  <svg viewBox="0 0 60 30" className="flag-icon" xmlns="http://www.w3.org/2000/svg">
+    <rect width="60" height="30" fill="#012169" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6" />
+    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="4" />
+    <path d="M30,0 v30 M0,15 h60" stroke="#fff" strokeWidth="10" />
+    <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6" />
+  </svg>
+);
+
 interface TemplatesProps {
-  selectedTemplateId: string;
   onSelectTemplate: (id: string) => void;
-  allTemplates: TemplateData[];
-  templateOptions: { value: string; label: string }[];
+  allTemplates: any[]; 
   userId: string;
   customButtons: ModuleCopyConfig;
-  data: {
-    ersattning: any;
-    ticket: {
-      bookingNumber: string;
-      cost: string;
-      cardNumber: string;
-    };
-    merkostnader: any;
-    templates: any;
-    notes: any;
-    train: any;
-  };
+  data: any;
+  templateOptions: any[]; 
 }
 
 export function Templates({
-  selectedTemplateId,
-  onSelectTemplate,
+  onSelectTemplate, 
   allTemplates,
-  templateOptions,
   userId,
   customButtons,
   data,
 }: TemplatesProps) {
+  const [searchText, setSearchText] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [selectedLang, setSelectedLang] = useState<"SE" | "EN">("SE");
+  
+  // Modal State
   const [isModalOpen, setModalOpen] = useState(false);
-  const [activeTemplate, setActiveTemplate] = useState<TemplateData | null>(
-    null
-  );
-  // State to store the original template for change detection
-  const [originalTemplate, setOriginalTemplate] = useState<TemplateData | null>(
-    null
-  );
+  const [templateToEdit, setTemplateToEdit] = useState<any | null>(null);
 
-  const [isFieldPickerOpen, setFieldPickerOpen] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
-  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [triggerPosition, setTriggerPosition] = useState(0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // --- NEW: Generate options locally (copied logic from SettingsModal) ---
-  const allFieldsAsOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
-    for (const moduleId in allModuleParts) {
-      const moduleName = moduleNames[moduleId] || "Unknown Module";
-      const parts = allModuleParts[moduleId as keyof typeof allModuleParts];
-      for (const fieldId in parts) {
-        options.push({
-          value: `${moduleId}.${fieldId}`,
-          label: `${moduleName}: ${parts[fieldId].label}`,
-        });
-      }
+  // --- Filter Logic ---
+  const filteredTemplates = useMemo(() => {
+    if (!searchText) return allTemplates;
+    const lower = searchText.toLowerCase();
+    return allTemplates.filter((t) => {
+      const labelSE = t.labelSE || t.label || "";
+      const labelEN = t.labelEN || "";
+      return labelSE.toLowerCase().includes(lower) || labelEN.toLowerCase().includes(lower);
+    });
+  }, [allTemplates, searchText]);
+
+  // --- Reset Highlight on Search ---
+  useEffect(() => {
+    setHighlightedIndex(0);
+    setSelectedLang("SE");
+  }, [searchText]);
+
+  // --- Auto-scroll to Highlighted Item ---
+  useEffect(() => {
+    if (isOpen && listRef.current && listRef.current.children[highlightedIndex]) {
+      const activeElement = listRef.current.children[highlightedIndex] as HTMLElement;
+      activeElement.scrollIntoView({ block: 'nearest' });
     }
-    // Add Loop Helper Fields
-    options.push({ value: "decision", label: "Loop: Decision" });
-    options.push({ value: "trainNumber", label: "Loop: Train Number" });
-    options.push({ value: "delay", label: "Loop: Delay" });
-    options.push({ value: "compensation", label: "Loop: Compensation" });
-    options.push({ value: "category", label: "Loop: Category" });
-    options.push({ value: "caseNumber", label: "Loop: Case Number" });
+  }, [highlightedIndex, isOpen]);
 
-    return options;
+  // --- Close dropdown on outside click ---
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const openModal = () => {
-    const selected = allTemplates.find((t) => t.id === selectedTemplateId);
-    const templateToEdit = selected || { id: "", label: "", content: "" };
-    setActiveTemplate(templateToEdit);
-    setOriginalTemplate(templateToEdit); // Store the original state at modal open
+  // --- Copy Logic ---
+  const handleCopy = (template: any, lang: "SE" | "EN") => {
+    let contentToProcess = "";
+    
+    if (lang === "SE") {
+      // Prioritize explicit SE content, fall back to legacy 'content'
+      contentToProcess = template.contentSE || template.content || "";
+    } else {
+      contentToProcess = template.contentEN || "";
+    }
+
+    if (contentToProcess) {
+      const finalContent = replaceTemplateVariables(contentToProcess, data);
+      navigator.clipboard.writeText(finalContent);
+      
+      // FIXED: Only trigger parent selection if picking Swedish (Primary).
+      // Triggering it for English often causes the parent to reload the 
+      // default (Swedish) content into the form, overwriting the English copy.
+      if (lang === "SE" && onSelectTemplate) {
+        onSelectTemplate(template.id);
+      }
+      
+      setIsOpen(false);
+      setSearchText(""); 
+    } else {
+      // Optional: Feedback if empty
+      console.warn("No content found for language:", lang);
+    }
+  };
+
+  const handleEdit = () => {
+    setTemplateToEdit(null);
     setModalOpen(true);
   };
-
-  const handleModalSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const templateId = e.target.value;
-    if (templateId === "") {
-      const blankTemplate = { id: "", label: "", content: "" };
-      setActiveTemplate(blankTemplate);
-      setOriginalTemplate(blankTemplate);
-    } else {
-      const selected = allTemplates.find((t) => t.id === templateId);
-      if (selected) {
-        setActiveTemplate(selected);
-        setOriginalTemplate(selected); // Update original state when selection changes
-      }
-    }
+  
+  const handleEditSpecific = (e: React.MouseEvent, t: any) => {
+      e.stopPropagation();
+      setTemplateToEdit(t);
+      setModalOpen(true);
   };
 
-  const handleFieldChange = (field: "label" | "content", value: string) => {
-    const current = activeTemplate || { id: "", label: "", content: "" };
-    setActiveTemplate({ ...current, [field]: value });
-
-    // --- Trigger logic ---
-    if (field === "content" && contentTextareaRef.current) {
-      const textarea = contentTextareaRef.current;
-      const cursorPos = textarea.selectionStart;
-      const lastChar = value[cursorPos - 1];
-
-      if (lastChar === "@") {
-        setTriggerPosition(cursorPos); // Save where the '@' was typed
-        const coords = getCaretCoordinates(textarea, cursorPos);
-        setPopoverPosition({ top: coords.top + 20, left: coords.left });
-        setFieldPickerOpen(true);
-      }
-    }
-  };
-
-  // --- Handler for when a field is selected from the popover ---
-  const handleFieldSelect = (selectedValue: string) => {
-    if (!contentTextareaRef.current || !activeTemplate) return;
-
-    const textarea = contentTextareaRef.current;
-    const originalContent = activeTemplate.content;
-    const placeholder = `{${selectedValue}}`;
-
-    // Replace the '@' at the trigger position with the full placeholder
-    const newContent =
-      originalContent.slice(0, triggerPosition - 1) +
-      placeholder +
-      originalContent.slice(triggerPosition);
-
-    // Update state
-    handleFieldChange("content", newContent);
-
-    // Close the picker
-    setFieldPickerOpen(false);
-
-    // Set focus back to the textarea and move cursor to the end of the inserted text
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = triggerPosition - 1 + placeholder.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
-  // --- Modal Action Handlers ---
-  const handleSave = async () => {
-    if (!activeTemplate || !activeTemplate.id) {
-      alert("No template selected to save.");
+  // --- Keyboard Navigation ---
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen && filteredTemplates.length > 0 && (e.key === "ArrowDown" || e.key === "Enter")) {
+      setIsOpen(true);
       return;
     }
-    if (!activeTemplate.label.trim()) {
-      alert("Label cannot be empty.");
-      return;
+
+    const currentTemplate = filteredTemplates[highlightedIndex];
+    // Check if English content exists
+    const hasEN = currentTemplate ? !!(currentTemplate.labelEN || currentTemplate.contentEN) : false;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((prev) => 
+          prev < filteredTemplates.length - 1 ? prev + 1 : prev
+        );
+        setSelectedLang("SE"); 
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        setSelectedLang("SE");
+        break;
+      case "ArrowRight":
+        if (hasEN) {
+            e.preventDefault();
+            setSelectedLang("EN");
+        }
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        setSelectedLang("SE");
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (currentTemplate) {
+          handleCopy(currentTemplate, selectedLang);
+        }
+        break;
+      case "Escape":
+        setIsOpen(false);
+        inputRef.current?.blur();
+        break;
     }
-    const updates = {
-      label: activeTemplate.label,
-      content: activeTemplate.content,
-      updatedAt: new Date().toISOString(),
-    };
-    await updateDocument("templates", activeTemplate.id, updates);
-    setModalOpen(false);
   };
-
-  const handleSaveAsNew = async () => {
-    if (!activeTemplate || !activeTemplate.label.trim()) {
-      alert("Label cannot be empty to save as new.");
-      return;
-    }
-    const newTemplateData = {
-      label: activeTemplate.label,
-      content: activeTemplate.content,
-      visibility: "private", // Default new templates to private
-      ownerId: userId, // <-- Use the actual user's ID here
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await addDocument("templates", newTemplateData);
-    setModalOpen(false);
-  };
-
-  const handleDelete = async () => {
-    if (!activeTemplate || !activeTemplate.id) return;
-    if (
-      window.confirm(
-        `Are you sure you want to delete "${activeTemplate.label}"?`
-      )
-    ) {
-      await deleteDocument("templates", activeTemplate.id);
-      setModalOpen(false);
-    }
-  };
-
-  // --- Logic to determine if buttons should be disabled ---
-  const hasChanges = useMemo(() => {
-    if (!activeTemplate || !originalTemplate) return false;
-    // No changes if the active template has no ID (it's a new one)
-    if (!activeTemplate.id) return false;
-    return (
-      activeTemplate.label !== originalTemplate.label ||
-      activeTemplate.content !== originalTemplate.content
-    );
-  }, [activeTemplate, originalTemplate]);
-
-  const canSaveAsNew = useMemo(() => {
-    // Label cannot be empty
-    if (!activeTemplate?.label.trim()) {
-      return false;
-    }
-    // If it's a brand new template (no original ID), it can be saved.
-    if (!originalTemplate?.id) {
-      return true;
-    }
-    // If editing an existing template, the label must be different to "Save as New".
-    return activeTemplate.label !== originalTemplate.label;
-  }, [activeTemplate, originalTemplate]);
 
   return (
     <>
-      <div className="section-container">
+      <div className="section-container" style={{overflow:'visible'}}> 
         <div className="section-header">
           <span className="section-title">Templates</span>
           <div className="buttons-wrapper">
             <DynamicButtonRow buttons={customButtons} formData={data} />
           </div>
         </div>
-        <div className="template-controls">
-          <SearchableSelect
-            options={templateOptions}
-            onEnter={onSelectTemplate}
-          />
+
+        <div className="template-controls" ref={dropdownRef}>
+          <div className="searchable-select" style={{position: 'relative'}}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search templates..."
+              className="input"
+              value={searchText}
+              onFocus={() => setIsOpen(true)}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setIsOpen(true);
+              }}
+              onKeyDown={handleKeyDown}
+            />
+
+            {isOpen && filteredTemplates.length > 0 && (
+              <div className="custom-dropdown-list" ref={listRef}>
+                {filteredTemplates.map((t, index) => {
+                  const isHighlighted = index === highlightedIndex;
+                  const labelSE = t.labelSE || t.label || "Untitled";
+                  const hasEN = !!(t.labelEN || t.contentEN);
+                  const isOwner = t.ownerId === userId;
+                  
+                  const isSEActive = isHighlighted && selectedLang === "SE";
+                  const isENActive = isHighlighted && selectedLang === "EN";
+
+                  return (
+                    <div
+                      key={t.id}
+                      className="dropdown-row"
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                    >
+                      {/* Left Side: SE Flag + Label */}
+                      <div 
+                        className={`row-label-se ${isSEActive ? "active-selection" : ""}`}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleCopy(t, "SE"); 
+                        }}
+                        onMouseEnter={() => setSelectedLang("SE")}
+                        title="Copy Swedish"
+                      >
+                         <FlagSE /> 
+                         <span className="template-label-text">{labelSE}</span>
+                      </div>
+
+                      {/* Right Side: Actions */}
+                      <div className="row-actions">
+                         {/* English Flag Button */}
+                         {hasEN && (
+                           <div 
+                             className={`lang-indicator ${isENActive ? "active-selection" : ""}`}
+                             onClick={(e) => { 
+                               e.stopPropagation(); 
+                               handleCopy(t, "EN"); 
+                             }}
+                             onMouseEnter={() => setSelectedLang("EN")}
+                             title="Copy English"
+                           >
+                             <FlagGB />
+                           </div>
+                         )}
+
+                         {/* Edit Button */}
+                         {isOwner && (
+                             <button 
+                                className="icon-btn-small"
+                                onClick={(e) => handleEditSpecific(e, t)}
+                                tabIndex={-1}
+                                title="Edit"
+                             >
+                                 <PencilIcon />
+                             </button>
+                         )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {isOpen && filteredTemplates.length === 0 && (
+                <div className="custom-dropdown-list" style={{padding: '10px', color: '#777', textAlign:'center'}}>
+                    No templates found.
+                </div>
+            )}
+          </div>
+
           <button
             className="button-svg"
-            title="Edit Templates"
-            onClick={openModal}
+            title="Create New Template"
+            onClick={handleEdit}
           >
-            <PencilIcon />
+            <span style={{ fontSize: "24px", fontWeight: "bold", lineHeight: 1 }}>+</span>
           </button>
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Edit Templates</h2>
-            <div className="modal-form">
-              <label>Select Template to Edit</label>
-              <select
-                value={activeTemplate?.id || ""}
-                onChange={handleModalSelectChange}
-              >
-                <option value="">-- New Template --</option>
-                {templateOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-
-              <label>Label</label>
-              <input
-                type="text"
-                placeholder="Template label..."
-                value={activeTemplate?.label || ""}
-                onChange={(e) => handleFieldChange("label", e.target.value)}
-              />
-
-              <label>Content</label>
-              <textarea
-                ref={contentTextareaRef}
-                placeholder="Template content... type @ to insert a field"
-                rows={8}
-                value={activeTemplate?.content || ""}
-                onChange={(e) => handleFieldChange("content", e.target.value)}
-              />
-            </div>
-            <div className="modal-actions">
-              <button
-                onClick={handleSave}
-                disabled={
-                  !activeTemplate?.id ||
-                  !hasChanges ||
-                  !activeTemplate.label.trim()
-                }
-              >
-                Save Changes
-              </button>
-              <button onClick={handleSaveAsNew} disabled={!canSaveAsNew}>
-                Save as New
-              </button>
-              <button onClick={handleDelete} disabled={!activeTemplate?.id}>
-                Delete
-              </button>
-              <button onClick={() => setModalOpen(false)}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {isFieldPickerOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: popoverPosition.top,
-            left: popoverPosition.left,
-            zIndex: 1002,
-          }}
-        >
-          <FieldPickerPopover
-            fields={allFieldsAsOptions}
-            onSelect={handleFieldSelect}
-            onClose={() => setFieldPickerOpen(false)}
-          />
-        </div>
-      )}
+      <TemplateModal
+        isOpen={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        templateToEdit={templateToEdit}
+        userId={userId}
+      />
     </>
   );
 }

@@ -97,6 +97,7 @@ const allFieldsAsOptions = useMemo(() => {
     options.push({ value: `${evfPrefix}.trainNumber`, label: "Loop (EVF): Tågnummer" });
     options.push({ value: `${evfPrefix}.delay`, label: "Loop (EVF): Försening" });
     options.push({ value: `${evfPrefix}.departureDate`, label: "Loop (EVF): Avgångsdatum" });
+    options.push({ value: `${evfPrefix}.departureDateWithTime`, label: "Loop (EVF): Avgångsdatum med tid" });
     options.push({ value: `${evfPrefix}.departureStation`, label: "Loop (EVF): Från" });
     options.push({ value: `${evfPrefix}.arrivalStation`, label: "Loop (EVF): Till" });
 

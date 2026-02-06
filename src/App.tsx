@@ -27,15 +27,24 @@ import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
 import MagicWandIcon from "./assets/magicWandIcon";
 import MagicWandIconFilled from "./assets/magicWandIconFilled";
+import MapIcon from "./assets/mapIcon";
 import { Auth } from "./components/Auth";
 import { defaultUserSettings } from "./data/defaultUserSettings";
 import { Toolbar } from "./components/Toolbar";
+
+
 
 // --- Interfaces ---
 interface TemplateData {
   id: string;
   label: string;
   content: string;
+  labelSE?: string;
+  contentSE?: string;
+  labelEN?: string;
+  contentEN?: string;
+  ownerId?: string;
+  visibility?: "public" | "private";
 }
 
 interface TemplateOption {
@@ -125,17 +134,22 @@ function App() {
           id: t.id,
           label: t.label || "Untitled",
           content: t.content || "",
+          labelSE: t.labelSE || t.label || "",
+          contentSE: t.contentSE || t.content || "",
+          labelEN: t.labelEN || "",
+          contentEN: t.contentEN || "",
+          ownerId: t.ownerId,
+          visibility: t.visibility
         }));
         setAllTemplates(templates);
       }
     );
 
-    // 2. Fetch Chat Templates (using your existing service which handles public/private logic)
+    // 2. Fetch Chat Templates
     const unsubscribeChatTemplates = onCollectionUpdate(
       "chatTemplates",
       currentUser.uid,
       (fetchedDocs) => {
-        // The service already unpacks the doc data and adds the ID
         const chats = fetchedDocs as ChatTemplateData[];
         setChatTemplates(chats);
       }
@@ -413,16 +427,14 @@ function App() {
   const handleTemplateSelect = (templateId: string) => {
     const selected = allTemplates.find((t) => t.id === templateId);
     if (selected) {
-      const processedContent = replaceTemplateVariables(
-        selected.content,
-        formData
-      );
+      const content = selected.contentSE || selected.content;
+      const processedContent = replaceTemplateVariables(content, formData);
       navigator.clipboard.writeText(processedContent);
       setFormData((prev) => ({
         ...prev,
         templates: {
           selectedTemplate: templateId,
-          templateContent: selected.content,
+          templateContent: content,
         },
       }));
     }
@@ -463,6 +475,13 @@ function App() {
         >
           {isExtractionEnabled ? <MagicWandIconFilled /> : <MagicWandIcon />}
         </button>
+          <button
+          className="button-svg"
+          title="Tågkarta"
+          onClick={() => window.open('/tågkarta.pdf', '', 'width=1350,height=1000,screenX=0,screenY=500')}
+        >
+          <MapIcon />
+        </button>
         <button
           className="button-svg"
           title="Clear all fields"
@@ -472,7 +491,9 @@ function App() {
         </button>
       </Toolbar>
 
-      {/* 1. Ersättning vid försening */}
+      {/* Stacked Layout as requested */}
+      
+      {/* 1. Ersättning */}
       <ErsattningVidForsening
         data={formData}
         onChange={(field, value) =>
@@ -500,13 +521,11 @@ function App() {
 
       {/* 3. Chat (Left 65%) & Ticket (Right 35%) */}
       <div className="chat-ticket-row">
-        {/* Chat Module */}
         <ChatModule 
            chatTemplates={chatTemplates} 
            userId={currentUser.uid} 
         />
         
-        {/* Ticket Module */}
         <div className="ticket-container-wrapper">
            <Ticket
               data={formData}
@@ -519,7 +538,7 @@ function App() {
 
       {/* 4. Templates */}
       <Templates
-        selectedTemplateId={formData.templates.selectedTemplate}
+        // selectedTemplateId prop removed as it was unused and caused TS error
         onSelectTemplate={handleTemplateSelect}
         allTemplates={allTemplates}
         templateOptions={templateOptions}
@@ -529,12 +548,14 @@ function App() {
       />
 
       {/* 5. Notes */}
-      <Notes
-        data={formData}
-        onChange={(field, value) => handleDataChange("notes", field, value)}
-        onClear={() => handleClear("notes")}
-        customButtons={userSettings.copyConfig.notes || []}
-      />
+      <div className="notes-container">
+        <Notes
+          data={formData}
+          onChange={(field, value) => handleDataChange("notes", field, value)}
+          onClear={() => handleClear("notes")}
+          customButtons={userSettings.copyConfig.notes || []}
+        />
+      </div>
 
       <SettingsModal
         isOpen={isSettingsOpen}
