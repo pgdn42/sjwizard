@@ -42,37 +42,27 @@ export interface UserSettings {
   copyConfig: CopyConfig;
 }
 
-export interface CopyPart {
-  id: string;
-  fieldId?: string;
-  moduleId?: keyof FormData;
-  label: string;
-  enabled: boolean;
-  type: "field" | "static" | "datetime" | "linebreak" | "loop";
-  value?: string;
-  appendPeriod?: boolean;
-  lineBreakCount?: number;
-  dateOnly?: boolean; // <-- ADD THIS LINE
-
-  context?: "root" | "item"; // 'root' for main case, 'item' for sub-case
-  loopSource?: keyof FormData; // e.g., 'ersattning'
-  loopOver?: "subCases"; // The array to loop over, e.g., 'subCases'
-  loopTemplate?: CopyPart[]; // The inner template for each item
-}
-
-export type CopyTemplate = CopyPart[];
-
 export interface CustomButton {
   id: string;
   label: string;
   icon: string;
   type: "copy" | "link";
   displayType: "icon" | "text";
-  template: CopyTemplate;
+  template: string; // <--- CHANGED TO STRING
+}
+export interface ChatTemplateData {
+  id?: string;
+  labelSE: string;
+  contentSE: string;
+  labelEN: string;
+  contentEN: string;
+  visibility: "private" | "public";
+  ownerId: string;
+  createdAt?: string;
 }
 
 export type ModuleCopyConfig = CustomButton[];
 
 export type CopyConfig = {
-  [K in keyof Partial<FormData>]?: ModuleCopyConfig;
+  [key: string]: ModuleCopyConfig | undefined;
 };

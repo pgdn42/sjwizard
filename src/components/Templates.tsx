@@ -8,9 +8,10 @@ import {
 } from "../services/firestoreService";
 import { DynamicButtonRow } from "./DynamicButtonRow";
 import type { ModuleCopyConfig } from "../types";
-import { allFieldsAsOptions } from "../data/templateFields";
+// REMOVED: import { allFieldsAsOptions } from "../data/templateFields"; 
+import { moduleNames, allModuleParts } from "../data/templateFields"; // IMPORT THIS INSTEAD
 import { FieldPickerPopover } from "./FieldPickerPopover";
-import { getCaretCoordinates } from "../utils"; // We will add this utility function next
+import { getCaretCoordinates } from "../utils";
 
 // Define the shape of a template object
 interface TemplateData {
@@ -64,6 +65,30 @@ export function Templates({
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [triggerPosition, setTriggerPosition] = useState(0);
 
+  // --- NEW: Generate options locally (copied logic from SettingsModal) ---
+  const allFieldsAsOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    for (const moduleId in allModuleParts) {
+      const moduleName = moduleNames[moduleId] || "Unknown Module";
+      const parts = allModuleParts[moduleId as keyof typeof allModuleParts];
+      for (const fieldId in parts) {
+        options.push({
+          value: `${moduleId}.${fieldId}`,
+          label: `${moduleName}: ${parts[fieldId].label}`,
+        });
+      }
+    }
+    // Add Loop Helper Fields
+    options.push({ value: "decision", label: "Loop: Decision" });
+    options.push({ value: "trainNumber", label: "Loop: Train Number" });
+    options.push({ value: "delay", label: "Loop: Delay" });
+    options.push({ value: "compensation", label: "Loop: Compensation" });
+    options.push({ value: "category", label: "Loop: Category" });
+    options.push({ value: "caseNumber", label: "Loop: Case Number" });
+
+    return options;
+  }, []);
+
   const openModal = () => {
     const selected = allTemplates.find((t) => t.id === selectedTemplateId);
     const templateToEdit = selected || { id: "", label: "", content: "" };
@@ -91,7 +116,7 @@ export function Templates({
     const current = activeTemplate || { id: "", label: "", content: "" };
     setActiveTemplate({ ...current, [field]: value });
 
-    // --- NEW: Trigger logic ---
+    // --- Trigger logic ---
     if (field === "content" && contentTextareaRef.current) {
       const textarea = contentTextareaRef.current;
       const cursorPos = textarea.selectionStart;
@@ -106,7 +131,7 @@ export function Templates({
     }
   };
 
-  // --- NEW: Handler for when a field is selected from the popover ---
+  // --- Handler for when a field is selected from the popover ---
   const handleFieldSelect = (selectedValue: string) => {
     if (!contentTextareaRef.current || !activeTemplate) return;
 

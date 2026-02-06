@@ -6,31 +6,30 @@ import { Merkostnader } from "./components/Merkostnader";
 import { Notes } from "./components/Notes";
 import { Templates } from "./components/Templates";
 import { Ticket } from "./components/Ticket";
-import { Train } from "./components/Train";
-import { Toolbar } from "./components/Toolbar";
+import { ChatModule } from "./components/ChatModule"; 
 import { SettingsModal } from "./components/SettingsModal";
 import type {
   FormData,
   CopyConfig,
   ErsattningData,
   MerkostnadData,
+  ChatTemplateData,
 } from "./types";
 import {
   onCollectionUpdate,
   getUserSettings,
   createUserSettings,
   updateUserSettings,
-  addDocument,
 } from "./services/firestoreService";
 import { replaceTemplateVariables } from "./utils";
 import "./components/modules.css";
 import TrashcanIcon from "./assets/trashcanIcon";
 import SettingsIcon from "./assets/settingsIcon";
-import AddToListIcon from "./assets/addToListIcon";
 import MagicWandIcon from "./assets/magicWandIcon";
 import MagicWandIconFilled from "./assets/magicWandIconFilled";
 import { Auth } from "./components/Auth";
 import { defaultUserSettings } from "./data/defaultUserSettings";
+import { Toolbar } from "./components/Toolbar";
 
 // --- Interfaces ---
 interface TemplateData {
@@ -51,9 +50,7 @@ export interface UserSettings {
 // --- Helper to get today's date and time in YYYY-MM-DDTHH:MM format ---
 const getTodayString = () => {
   const now = new Date();
-  // Adjust for the local timezone offset
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  // Return the ISO string, sliced to the correct format for the input
   return now.toISOString().slice(0, 16);
 };
 
@@ -73,8 +70,8 @@ const initialFormData: FormData = {
   ticket: { bookingNumber: "", cardNumber: "", cost: "" },
   merkostnader: {
     caseNumber: "",
-    category: "",
-    decision: "approved",
+    category: "Mat",
+    decision: "Godkänd",
     compensation: "",
     subCases: [],
   },
@@ -93,9 +90,12 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
-  const [userSettings, setUserSettings] =
-    useState<UserSettings>(defaultUserSettings);
+  const [userSettings, setUserSettings] = useState<UserSettings>(defaultUserSettings);
+  
   const [allTemplates, setAllTemplates] = useState<TemplateData[]>([]);
+  // New state for Chat Templates
+  const [chatTemplates, setChatTemplates] = useState<ChatTemplateData[]>([]);
+  
   const [isExtractionEnabled, setExtractionEnabled] = useState(false);
 
   // Effect to listen for auth state changes
@@ -106,15 +106,17 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Effect to load all user data (templates and settings)
+  // Effect to load all user data
   useEffect(() => {
     if (!currentUser) {
       setAllTemplates([]);
+      setChatTemplates([]);
       setUserSettings(defaultUserSettings);
       setIsLoading(false);
       return;
     }
 
+    // 1. Fetch Standard Templates
     const unsubscribeTemplates = onCollectionUpdate(
       "templates",
       currentUser.uid,
@@ -128,6 +130,18 @@ function App() {
       }
     );
 
+    // 2. Fetch Chat Templates (using your existing service which handles public/private logic)
+    const unsubscribeChatTemplates = onCollectionUpdate(
+      "chatTemplates",
+      currentUser.uid,
+      (fetchedDocs) => {
+        // The service already unpacks the doc data and adds the ID
+        const chats = fetchedDocs as ChatTemplateData[];
+        setChatTemplates(chats);
+      }
+    );
+
+    // 3. Load User Settings
     const loadUserSettings = async () => {
       const settings = (await getUserSettings(
         currentUser.uid
@@ -143,9 +157,13 @@ function App() {
 
     loadUserSettings();
 
-    return () => unsubscribeTemplates();
+    return () => {
+      unsubscribeTemplates();
+      unsubscribeChatTemplates();
+    };
   }, [currentUser]);
 
+  // Extraction Listener
   useEffect(() => {
     const messageListener = (message: any) => {
       if (message.type !== "EXTRACTED_VALUES") return;
@@ -154,12 +172,9 @@ function App() {
       console.log("Received data:", scrapedData);
 
       setFormData((prevData) => {
-        // Create a deep copy to safely modify nested state
         const newData = JSON.parse(JSON.stringify(prevData));
-        const { caseType, mainCaseNumber, caseNumber, ...restOfData } =
-          scrapedData;
+        const { caseType, mainCaseNumber, caseNumber, ...restOfData } = scrapedData;
 
-        // Helper to get a "signature" of a case for merging Ersättning cases
         const getSignature = (caseData: any) =>
           [
             caseData.trainNumber,
@@ -168,9 +183,8 @@ function App() {
             caseData.arrivalStation,
           ].join("|");
 
-        // --- SUB-CASE LOGIC (A Huvudärende number was found) ---
+        // --- SUB-CASE LOGIC ---
         if (mainCaseNumber && caseNumber) {
-          // Check if this is a Merkostnad sub-case
           const isMerkostnadSubCase = caseType === "Kundserviceärende";
 
           if (isMerkostnadSubCase) {
@@ -180,31 +194,25 @@ function App() {
             );
 
             if (subCase) {
-              // If it exists, update it
               Object.assign(subCase, restOfData);
               if (scrapedData.underkategori)
                 subCase.category = scrapedData.underkategori;
-              // Rule 2: Update compensation for existing sub-case
               if (scrapedData.compensation)
                 subCase.compensation = scrapedData.compensation;
             } else {
-              // If not, create it
               newData.merkostnader.subCases.push({
                 id: `subcase-merk-${Date.now()}`,
                 caseNumber: caseNumber,
-                category: scrapedData.underkategori || "food",
-                decision: "approved",
-                // Rule 2: Set compensation for new sub-case
+                category: scrapedData.underkategori || "Mat",
+                decision: "Godkänd",
                 compensation: scrapedData.compensation || "",
               });
             }
-            // Always update the related Ersättning case from the description
             if (scrapedData.relatedErsattningCase) {
               newData.ersattning.caseNumber = scrapedData.relatedErsattningCase;
             }
-          }
-          // Otherwise, assume it's an Ersättning sub-case
-          else {
+          } else {
+            // Ersättning sub-case
             const ersattning = newData.ersattning;
             ersattning.caseNumber = mainCaseNumber;
 
@@ -228,7 +236,6 @@ function App() {
             if (subCaseToUpdate) {
               const currentSignature = getSignature(subCaseToUpdate);
               if (currentSignature !== "|||") {
-                // Don't merge empty cases
                 const mergeTarget = ersattning.subCases.find(
                   (sc: ErsattningData) =>
                     sc.id !== subCaseToUpdate.id &&
@@ -252,14 +259,8 @@ function App() {
         }
         // --- MAIN CASE & STANDARD CASE LOGIC ---
         else if (caseNumber) {
-          // This handles all cases that are not sub-cases
-
-          // First, update all possible fields from the scraped data
           const mapping = {
-            departureStation: {
-              section: "ersattning",
-              field: "departureStation",
-            },
+            departureStation: { section: "ersattning", field: "departureStation" },
             arrivalStation: { section: "ersattning", field: "arrivalStation" },
             trainNumber: { section: "ersattning", field: "trainNumber" },
             delay: { section: "ersattning", field: "delay" },
@@ -267,7 +268,6 @@ function App() {
             bookingNumber: { section: "ticket", field: "bookingNumber" },
             cost: { section: "ticket", field: "cost" },
             cardNumber: { section: "ticket", field: "cardNumber" },
-            // Rule 2: Ensure compensation is mapped for standard cases
             compensation: { section: "merkostnader", field: "compensation" },
           };
 
@@ -280,7 +280,6 @@ function App() {
             }
           });
 
-          // Second, set the primary case numbers and specific fields based on case type
           if (caseType === "Huvudärende - Merkostnad") {
             newData.merkostnader.caseNumber = caseNumber;
             if (scrapedData.relatedErsattningCase) {
@@ -291,12 +290,10 @@ function App() {
             newData.ersattning.caseNumber =
               scrapedData.relatedErsattningCase ||
               newData.ersattning.caseNumber;
-            // Rule 1: Set Kategori from Underkategori
             if (scrapedData.underkategori) {
               newData.merkostnader.category = scrapedData.underkategori;
             }
           } else {
-            // This is a standard Ersättning case or Huvudärende - RTG
             newData.ersattning.caseNumber = caseNumber;
           }
         }
@@ -365,10 +362,7 @@ function App() {
       );
       return {
         ...prevData,
-        ersattning: {
-          ...prevData.ersattning,
-          subCases: newSubCases,
-        },
+        ersattning: { ...prevData.ersattning, subCases: newSubCases },
       };
     });
   };
@@ -393,37 +387,6 @@ function App() {
       }));
     } else {
       setFormData(initialFormData);
-    }
-  };
-
-  const handleClearAndSaveTrain = async () => {
-    if (!currentUser) return;
-    const {
-      trainNumber,
-      departureStation,
-      arrivalStation,
-      delay,
-      departureDate,
-    } = formData.ersattning;
-    if (!trainNumber.trim() || !delay.trim()) {
-      alert("Please enter at least a train number and delay before saving.");
-      return;
-    }
-    const trainData = {
-      trainNumber,
-      departureStation,
-      arrivalStation,
-      delay: parseInt(delay, 10) || 0,
-      departureDate,
-      ownerId: currentUser.uid,
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      await addDocument("delayedTrains", trainData);
-      handleClear();
-    } catch (error) {
-      console.error("Error saving train data:", error);
-      alert("Failed to save train data. Please try again.");
     }
   };
 
@@ -502,19 +465,14 @@ function App() {
         </button>
         <button
           className="button-svg"
-          title="Save train info and clear all fields"
-          onClick={handleClearAndSaveTrain}
-        >
-          <AddToListIcon />
-        </button>
-        <button
-          className="button-svg"
           title="Clear all fields"
           onClick={() => handleClear()}
         >
           <TrashcanIcon />
         </button>
       </Toolbar>
+
+      {/* 1. Ersättning vid försening */}
       <ErsattningVidForsening
         data={formData}
         onChange={(field, value) =>
@@ -524,7 +482,10 @@ function App() {
         onDeleteSubCase={handleDeleteSubCase}
         onClear={() => handleClear("ersattning")}
         customButtons={userSettings.copyConfig.ersattning || []}
+        subCaseButtons={userSettings.copyConfig.ersattning_sub || []}
       />
+
+      {/* 2. Merkostnader */}
       <Merkostnader
         data={formData}
         onChange={(field, value) =>
@@ -532,28 +493,31 @@ function App() {
         }
         onClear={() => handleClear("merkostnader")}
         customButtons={userSettings.copyConfig.merkostnader || []}
+        subCaseButtons={userSettings.copyConfig.merkostnader_sub || []}
         onSubCaseChange={handleMerkostnadSubCaseChange}
         onDeleteSubCase={handleDeleteMerkostnadSubCase}
       />
-      <div className="row-container">
-        <div className="ticket-container">
-          <Ticket
-            data={formData}
-            onChange={(field, value) =>
-              handleDataChange("ticket", field, value)
-            }
-            onClear={() => handleClear("ticket")}
-            customButtons={userSettings.copyConfig.ticket || []}
-          />
-        </div>
-        <div className="train-container">
-          <Train
-            data={formData}
-            customButtons={userSettings.copyConfig.train || []}
-            userId={currentUser.uid}
-          />
+
+      {/* 3. Chat (Left 65%) & Ticket (Right 35%) */}
+      <div className="chat-ticket-row">
+        {/* Chat Module */}
+        <ChatModule 
+           chatTemplates={chatTemplates} 
+           userId={currentUser.uid} 
+        />
+        
+        {/* Ticket Module */}
+        <div className="ticket-container-wrapper">
+           <Ticket
+              data={formData}
+              onChange={(field, value) => handleDataChange("ticket", field, value)}
+              onClear={() => handleClear("ticket")}
+              customButtons={userSettings.copyConfig.ticket || []}
+           />
         </div>
       </div>
+
+      {/* 4. Templates */}
       <Templates
         selectedTemplateId={formData.templates.selectedTemplate}
         onSelectTemplate={handleTemplateSelect}
@@ -563,12 +527,15 @@ function App() {
         data={formData}
         customButtons={userSettings.copyConfig.templates || []}
       />
+
+      {/* 5. Notes */}
       <Notes
         data={formData}
         onChange={(field, value) => handleDataChange("notes", field, value)}
         onClear={() => handleClear("notes")}
         customButtons={userSettings.copyConfig.notes || []}
       />
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setSettingsOpen(false)}

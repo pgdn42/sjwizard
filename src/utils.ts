@@ -1,177 +1,107 @@
-import type { CopyPart, FormData } from "./types";
+import type { FormData } from "./types";
 
-/**
- * Replaces placeholders like {caseNumber} in a string with values from the formData object.
- */
-/**
- * Replaces placeholders like {module.field} in a string with values from the formData object.
- * Example: "Case number is {ersattning.caseNumber}"
- */
+const getNestedValue = (obj: any, path: string): string => {
+  if (!obj) return "";
+  return path.split(".").reduce((acc, part) => (acc && acc[part] ? acc[part] : ""), obj) || "";
+};
+
 export function replaceTemplateVariables(
   templateString: string,
   formData: FormData
 ): string {
-  const replacedString = templateString.replace(/\{(.+?)\}/g, (match, key) => {
-    const trimmedKey = key.trim();
-    const keys = trimmedKey.split(".");
+  return buildStringFromTemplate(templateString, formData);
+}
 
-    // Check for the "module.field" format
-    if (keys.length === 2) {
-      const [moduleId, fieldId] = keys as [keyof FormData, string];
-      if (
-        formData[moduleId] &&
-        typeof formData[moduleId] === "object" &&
-        fieldId in formData[moduleId]
-      ) {
-        // @ts-ignore - We've confirmed the keys exist.
-        const value = formData[moduleId][fieldId];
-        return value !== undefined && value !== null ? String(value) : "";
-      }
-    }
-    // If the key doesn't match the "module.field" format, return the original placeholder.
-    // This prevents accidental replacement with undefined.
-    return match;
+export function buildStringFromTemplate(
+  template: string,
+  formData: FormData,
+  contextData: any = null
+): string {
+  if (!template || typeof template !== "string") return "";
+
+  let result = template;
+
+  // 1. HANDLE CONDITIONAL BLOCKS (IF/ELSE)
+  // Syntax: {{#if_has_subcases}} ... {{else}} ... {{/if}}
+  const hasSubCases = 
+    (formData.ersattning?.subCases?.length > 0) || 
+    (formData.merkostnader?.subCases?.length > 0);
+
+  const ifRegex = /{{#if_has_subcases}}([\s\S]*?)(?:{{else}}([\s\S]*?))?{{\/if}}/g;
+
+  result = result.replace(ifRegex, (_: string, rawIfContent: string, rawElseContent: string | undefined) => {
+    // TRIM FIX: Remove leading/trailing newlines from the blocks so the tags themselves don't add gaps
+    const ifContent = rawIfContent ? rawIfContent.replace(/^\n+|\n+$/g, "") : "";
+    const elseContent = rawElseContent ? rawElseContent.replace(/^\n+|\n+$/g, "") : "";
+    
+    return hasSubCases ? ifContent : elseContent;
   });
 
-  return replacedString;
-}
-/**
- * Generates a string from a copy template and form data.
- * This version supports looping over sub-case arrays.
- * @param template The array of CopyPart objects.
- * @param formData The full data object.
- * @param contextData The data for the current loop item (optional).
- * @returns The final, formatted string.
- */
-export function buildStringFromTemplate(
-  template: CopyPart[],
-  formData: FormData,
-  contextData: any = null, // Pass sub-case data here during loops
-  separator: string = " " // <-- ADD THIS NEW ARGUMENT WITH A DEFAULT VALUE
-): string {
-  const now = new Date();
-  const formattedDateTime = `${now.getFullYear()}-${(now.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")} ${now
-    .getHours()
-    .toString()
-    .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+  // 2. HANDLE LOOPS
+  const loopPatterns = [
+    { tag: "ersattning", source: formData.ersattning.subCases },
+    { tag: "merkostnader", source: formData.merkostnader.subCases },
+  ];
 
-  const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+  loopPatterns.forEach(({ tag, source }) => {
+    const regex = new RegExp(`{{#loop_${tag}}}([\\s\\S]*?){{\\/loop}}`, "g");
+    
+    result = result.replace(regex, (_: string, rawInnerContent: string) => {
+      if (!source || !Array.isArray(source) || source.length === 0) return "";
+      
+      // TRIM FIX: Remove newlines immediately inside the loop tags
+      const innerContent = rawInnerContent.replace(/^\n+|\n+$/g, "");
 
-  const stringParts: string[] = [];
+      return source
+        .map((item) => {
+          return innerContent.replace(/{([a-zA-Z0-9_.]+)}/g, (__: string, key: string) => {
+             // A. Check for explicit "loop.TAG." prefix
+             const loopPrefix = `loop.${tag}.`;
+             if (key.startsWith(loopPrefix)) {
+                const itemKey = key.replace(loopPrefix, "");
+                if (item && itemKey in item) {
+                    return String(item[itemKey as keyof typeof item] || "");
+                }
+             }
 
-  for (const part of template) {
-    if (!part.enabled) continue;
-    let value = "";
+             // B. Fallback for short syntax inside loop (e.g. {decision})
+             if (item && key in item) {
+                 return String(item[key as keyof typeof item] || "");
+             }
 
-    switch (part.type) {
-      case "field":
-        const dataSource = part.context === "item" ? contextData : formData;
-        if (part.moduleId && part.fieldId && dataSource) {
-          // @ts-ignore
-          value = dataSource[part.moduleId]?.[part.fieldId] || "";
-        }
-        if (value && part.appendPeriod) {
-          value += ".";
-        }
-        break;
+             // C. Fallback to global data
+             return getNestedValue(formData, key);
+          });
+        })
+        .join("\n"); // Join items with a single newline
+    });
+  });
 
-      case "static":
-        value = part.value || "";
-        break;
-
-      case "datetime":
-        value = part.dateOnly ? formattedDate : formattedDateTime;
-        break;
-
-      case "linebreak":
-        value = "\n".repeat(part.lineBreakCount || 1);
-        break;
-
-      case "loop":
-        if (part.loopSource && part.loopOver && part.loopTemplate) {
-          // @ts-ignore
-          const loopArray = formData[part.loopSource]?.[part.loopOver] || [];
-          const loopResults = loopArray.map((item: any) =>
-            // RECURSIVE CALL: Build the string for the inner template
-            // Pass the current sub-case 'item' as the contextData
-            buildStringFromTemplate(part.loopTemplate!, formData, {
-              [part.loopSource!]: item,
-            })
-          );
-          value = loopResults.join("\n");
-        }
-        break;
+  // 3. HANDLE VARIABLES (Context Aware)
+  result = result.replace(/{([a-zA-Z0-9_.]+)}/g, (_: string, key: string) => {
+    if (contextData && key in contextData) {
+        return String(contextData[key] || "");
     }
-    stringParts.push(value);
-  }
+    return getNestedValue(formData, key);
+  });
 
-  // Smarter joining logic
-  let result = "";
-  for (let i = 0; i < stringParts.length; i++) {
-    const currentPart = stringParts[i];
-    if (currentPart.length === 0) continue;
-
-    if (template[i].type === "linebreak" || template[i].type === "loop") {
-      result += currentPart;
-      continue;
-    }
-
-    result += currentPart;
-
-    if (i < stringParts.length - 1) {
-      const nextPartTemplate = template[i + 1];
-      if (
-        nextPartTemplate.enabled &&
-        nextPartTemplate.type !== "linebreak" &&
-        nextPartTemplate.type !== "loop"
-      ) {
-        // --- CORRECTED: Use the new separator argument ---
-        result += separator;
-      }
-    }
-  }
   return result;
 }
 
+/**
+ * Calculates coordinates for the Field Picker Popover.
+ */
 export function getCaretCoordinates(
   element: HTMLTextAreaElement,
   position: number
 ) {
   const properties = [
-    "direction",
-    "boxSizing",
-    "width",
-    "height",
-    "overflowX",
-    "overflowY",
-    "borderTopWidth",
-    "borderRightWidth",
-    "borderBottomWidth",
-    "borderLeftWidth",
-    "paddingTop",
-    "paddingRight",
-    "paddingBottom",
-    "paddingLeft",
-    "fontStyle",
-    "fontVariant",
-    "fontWeight",
-    "fontStretch",
-    "fontSize",
-    "fontSizeAdjust",
-    "lineHeight",
-    "fontFamily",
-    "textAlign",
-    "textTransform",
-    "textIndent",
-    "textDecoration",
-    "letterSpacing",
-    "wordSpacing",
-    "tabSize",
-    "MozTabSize",
+    "direction", "boxSizing", "width", "height", "overflowX", "overflowY",
+    "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+    "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "fontStyle", "fontVariant", "fontWeight", "fontStretch", "fontSize",
+    "fontSizeAdjust", "lineHeight", "fontFamily", "textAlign", "textTransform",
+    "textIndent", "textDecoration", "letterSpacing", "wordSpacing", "tabSize", "MozTabSize",
   ];
 
   const isFirefox = "mozInnerScreenX" in window;
@@ -213,8 +143,7 @@ export function getCaretCoordinates(
   };
 
   document.body.removeChild(div);
-
-  // Get textarea's absolute position
+  
   const rect = element.getBoundingClientRect();
   return {
     top: rect.top + coordinates.top - element.scrollTop,

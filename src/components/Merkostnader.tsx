@@ -8,6 +8,7 @@ interface MerkostnaderProps {
   onChange: (field: string, value: string) => void;
   onClear: () => void;
   customButtons: ModuleCopyConfig;
+  subCaseButtons: ModuleCopyConfig; 
   onSubCaseChange: (subCaseId: string, field: string, value: string) => void;
   onDeleteSubCase: (subCaseId: string) => void;
 }
@@ -17,6 +18,7 @@ export function Merkostnader({
   onChange,
   onClear,
   customButtons,
+  subCaseButtons,
   onSubCaseChange,
   onDeleteSubCase,
 }: MerkostnaderProps) {
@@ -47,8 +49,8 @@ export function Merkostnader({
             value={data.merkostnader.decision} // <-- UPDATED
             onChange={(e) => onChange("decision", e.target.value)}
           >
-            <option value="approved">Godkänd</option>
-            <option value="denied">Nekad</option>
+            <option value="Godkänd">Godkänd</option>
+            <option value="Avslag">Avslag</option>
           </select>
         </FloatingLabel>
         <FloatingLabel label="Kategori" className="width-medium">
@@ -59,7 +61,7 @@ export function Merkostnader({
           >
             <option value="Mat">Mat</option>
             <option value="Transport">Transport</option>
-            <option value="Hotel">Hotel</option>
+            <option value="Hotell">Hotell</option>
           </select>
         </FloatingLabel>
 
@@ -75,6 +77,8 @@ export function Merkostnader({
         <MerkostnadSubModule
           key={subCase.id}
           subCase={subCase}
+          formData={data}                
+          customButtons={subCaseButtons} 
           onSubCaseChange={(field, value) =>
             onSubCaseChange(subCase.id!, field, value)
           }

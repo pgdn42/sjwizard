@@ -804,3 +804,156 @@ button:disabled:hover {
   font-size: 0.9em;
   color: #666;
 }
+/* =========================================
+   Chat & Ticket Split Layout (Fixed Height)
+   ========================================= */
+
+.chat-ticket-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  /* Define the fixed height of this entire row. 
+     This ensures the Chat module stays this height even when empty. */
+  height: 200px; 
+  min-height: 200px;
+}
+
+/* Chat Module: Occupies ~65% */
+.chat-ticket-row .chat-module-container {
+  flex: 6.5; 
+  min-width: 0; 
+  height: 100%; /* Fill the row height */
+}
+.chat-module-container{
+  gap: 0px;
+}
+
+
+
+/* Ticket Module: Occupies ~35% */
+.chat-ticket-row .ticket-container-wrapper {
+  flex: 3.5;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fill the row height */
+}
+
+/* Ensure the Ticket component inside fills the wrapper */
+.chat-ticket-row .ticket-container-wrapper > * {
+  height: 100%;
+  width: 100%;
+}
+
+
+/* =========================================
+   Chat Module Internals
+   ========================================= */
+
+.chat-module-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  /* Height is controlled by parent .chat-ticket-row */
+}
+
+/* The scrollable area for the list */
+.chat-template-list {
+  flex-grow: 1; /* Fills all available empty space */
+  overflow-y: auto;
+  padding-right: 5px; 
+  margin-bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Center the "No templates" message vertically if list is empty */
+.no-templates-message {
+  font-style: italic;
+  color: var(--color-placeholder);
+  text-align: center;
+  margin: auto; /* Centers it in the available growing space */
+}
+
+.chat-template-list::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-template-list::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+
+/* Row Layout */
+.chat-template-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0; /* Prevents rows from squashing if list is very full */
+}
+
+/* Edit Button (Far Right) */
+.row-edit-button {
+  margin-left: auto; /* Pushes button to the far right */
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-placeholder);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px; 
+  width: 36px; 
+  flex-shrink: 0;
+}
+.row-edit-button:hover {
+  color: var(--color-primary);
+  border-color: var(--color-border);
+  background-color: var(--color-containerbg2);
+  border-radius: var(--border-radius);
+}
+
+/* Copy Buttons (SE/GB) */
+.chat-template-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* Space between flag and text */
+  height: 36px;
+  flex: 0 1 auto; 
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+}
+
+/* New SVG Flag Styling */
+.flag-icon {
+  width: 20px;
+  height: auto;
+  border-radius: 2px; /* Slight roundness looks nice */
+  flex-shrink: 0;
+  box-shadow: 0 0 1px rgba(0,0,0,0.5); /* Subtle border for visibility */
+}
+/* Highlight the specific button (SE or EN) when selected */
+.chat-template-button.highlighted-btn {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 0 5px rgba(184, 78, 38, 0.4);
+  z-index: 1; /* Ensure it sits above non-highlighted elements */
+}
+
+/* Optional: Subtle background for the active row to help track position */
+.chat-template-row.selected-row {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--border-radius);
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}

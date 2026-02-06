@@ -1,21 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { User } from "firebase/auth";
-import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { SortableItem } from "./SortableItem";
-import { SortableLoopBlock } from "./SortableLoopBlock"; // Import the new component
-import type { CopyConfig, CopyPart, FormData } from "../types";
+import type { CopyConfig, FormData } from "../types";
 import type { UserSettings } from "../App";
-import { buildStringFromTemplate } from "../utils";
+import { buildStringFromTemplate, getCaretCoordinates } from "../utils";
 import { ManageButtonsTab } from "./ManageButtonsTab";
 import { moduleNames, allModuleParts } from "../data/templateFields";
+import { FieldPickerPopover } from "./FieldPickerPopover";
 
-// --- Placeholder Data ---
-const placeholderData: { [key: string]: any } = {
+// --- Placeholder Data for Live Preview ---
+const placeholderData: FormData = {
   ersattning: {
     caseNumber: "1-23456789",
     decision: "50%",
@@ -26,8 +19,8 @@ const placeholderData: { [key: string]: any } = {
     delay: "65",
     producer: "SJ",
     subCases: [
-      { caseNumbers: ["SC-1"], decision: "50%", delay: "65" },
-      { caseNumbers: ["SC-2"], decision: "100%", delay: "125" },
+      { caseNumbers: ["SC-1"], decision: "50%", delay: "65", trainNumber: "99", departureDate: "2025-08-17", departureStation: "A", arrivalStation: "B", producer: "SJ" },
+      { caseNumbers: ["SC-2"], decision: "100%", delay: "125", trainNumber: "100", departureDate: "2025-08-17", departureStation: "A", arrivalStation: "B", producer: "SJ" },
     ],
   },
   merkostnader: {
@@ -36,8 +29,8 @@ const placeholderData: { [key: string]: any } = {
     decision: "Godkänd",
     compensation: "150",
     subCases: [
-      { caseNumber: "SC-M1", compensation: "100" },
-      { caseNumber: "SC-M2", compensation: "50" },
+      { caseNumber: "SC-M1", compensation: "100", decision: "Godkänd", category: "Mat" },
+      { caseNumber: "SC-M2", compensation: "50", decision: "Godkänd", category: "Transport" },
     ],
   },
   ticket: { bookingNumber: "ABC1234", cardNumber: "1234", cost: "599" },
@@ -47,6 +40,8 @@ const placeholderData: { [key: string]: any } = {
     extraNote: "Extra info",
     notesContent: "This is a note.",
   },
+  train: {},
+  templates: { selectedTemplate: "", templateContent: "" }
 };
 
 interface SettingsModalProps {
@@ -67,39 +62,53 @@ export function SettingsModal({
   onLogout,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState("account");
-  const [internalSettings, setInternalSettings] =
-    useState<UserSettings>(userSettings);
-  const [selectedModule, setSelectedModule] =
-    useState<keyof CopyConfig>("ersattning");
+  const [previewMode, setPreviewMode] = useState<"multi" | "single">("multi");
+  const [internalSettings, setInternalSettings] = useState<UserSettings>(userSettings);
+  const [selectedModule, setSelectedModule] = useState<keyof CopyConfig>("ersattning");
   const [selectedButtonIndex, setSelectedButtonIndex] = useState(0);
-  const [partToAdd, setPartToAdd] = useState<string>("static");
 
-  const allFieldsAsOptions = useMemo(() => {
-    const options: {
-      value: string;
-      label: string;
-      context?: "root" | "item";
-    }[] = [];
+  // Field Picker State
+  const [isFieldPickerOpen, setFieldPickerOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const [triggerPosition, setTriggerPosition] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+
+  
+  // --- Flatten Options for the Picker ---
+const allFieldsAsOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    
+    // 1. Standard Fields
     for (const moduleId in allModuleParts) {
       const moduleName = moduleNames[moduleId] || "Unknown Module";
       const parts = allModuleParts[moduleId as keyof typeof allModuleParts];
       for (const fieldId in parts) {
-        const part = parts[fieldId];
         options.push({
           value: `${moduleId}.${fieldId}`,
-          label: `${moduleName}: ${part.label}`,
+          label: `${moduleName}: ${parts[fieldId].label}`,
         });
       }
     }
+    
+    // 2. Ersättning Loop Fields
+    const evfPrefix = "loop.ersattning";
+    options.push({ value: `${evfPrefix}.decision`, label: "Loop (EVF): Beslut" });
+    options.push({ value: `${evfPrefix}.trainNumber`, label: "Loop (EVF): Tågnummer" });
+    options.push({ value: `${evfPrefix}.delay`, label: "Loop (EVF): Försening" });
+    options.push({ value: `${evfPrefix}.departureDate`, label: "Loop (EVF): Avgångsdatum" });
+    options.push({ value: `${evfPrefix}.departureStation`, label: "Loop (EVF): Från" });
+    options.push({ value: `${evfPrefix}.arrivalStation`, label: "Loop (EVF): Till" });
+
+    // 3. Merkostnad Loop Fields
+    const mkPrefix = "loop.merkostnader";
+    options.push({ value: `${mkPrefix}.caseNumber`, label: "Loop (MK): Ärendenummer" });
+    options.push({ value: `${mkPrefix}.category`, label: "Loop (MK): Kategori" });
+    options.push({ value: `${mkPrefix}.decision`, label: "Loop (MK): Beslut" });
+    options.push({ value: `${mkPrefix}.compensation`, label: "Loop (MK): Ersättning" });
+    
     return options;
   }, []);
-
-  const subCaseFieldsAsOptions = useMemo(() => {
-    return allFieldsAsOptions.map((opt) => ({
-      ...opt,
-      label: `Sub-Case ${opt.label}`,
-    }));
-  }, [allFieldsAsOptions]);
 
   useEffect(() => {
     if (isOpen) {
@@ -111,6 +120,7 @@ export function SettingsModal({
     return JSON.stringify(internalSettings) !== JSON.stringify(userSettings);
   }, [internalSettings, userSettings]);
 
+  // Reset button selection when module changes
   useEffect(() => {
     setSelectedButtonIndex(0);
   }, [selectedModule]);
@@ -120,43 +130,44 @@ export function SettingsModal({
     [internalSettings, selectedModule]
   );
 
-  const currentTemplateConfig = useMemo(
-    () => currentButtons[selectedButtonIndex]?.template || [],
-    [currentButtons, selectedButtonIndex]
-  );
-
-  const itemIds = useMemo(
-    () => currentTemplateConfig.map((item) => item.id),
-    [currentTemplateConfig]
-  );
-
-  // Add this new useMemo hook right above the `previewText` hook
   const editingButton = useMemo(
     () => currentButtons[selectedButtonIndex],
     [currentButtons, selectedButtonIndex]
   );
 
-  // Now, modify the existing previewText hook like this
-  const previewText = useMemo(() => {
-    // Determine the separator based on the editing button's type
-    const separator = editingButton?.type === "link" ? "" : " ";
+  // Safe fallback to empty string if template is undefined
+  const currentTemplate = typeof editingButton?.template === 'string' ? editingButton.template : "";
 
+const activePlaceholderData = useMemo(() => {
+    if (previewMode === "multi") {
+      return placeholderData;
+    } else {
+      // Create a deep copy and empty the subcases to simulate "Single Case" mode
+      const singleData = JSON.parse(JSON.stringify(placeholderData));
+      singleData.ersattning.subCases = [];
+      singleData.merkostnader.subCases = [];
+      return singleData;
+    }
+  }, [previewMode]);
+
+    // Live Preview
+  const previewText = useMemo(() => {
     return buildStringFromTemplate(
-      currentTemplateConfig,
-      placeholderData as FormData,
-      null,
-      separator // Pass the correct separator here
+      currentTemplate,
+      activePlaceholderData as FormData // Use the toggled data here
     );
-  }, [currentTemplateConfig, editingButton]); // Update the dependency array
+  }, [currentTemplate, activePlaceholderData]);
 
   if (!isOpen) return null;
 
-  const updateTemplateForSelectedButton = (newTemplate: CopyPart[]) => {
+  // --- Handlers ---
+
+  const handleTemplateChange = (newText: string) => {
     const newButtons = [...currentButtons];
     if (newButtons[selectedButtonIndex]) {
       newButtons[selectedButtonIndex] = {
         ...newButtons[selectedButtonIndex],
-        template: newTemplate,
+        template: newText,
       };
     }
 
@@ -167,276 +178,222 @@ export function SettingsModal({
         [selectedModule]: newButtons,
       },
     }));
-  };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = itemIds.indexOf(active.id as string);
-      const newIndex = itemIds.indexOf(over.id as string);
-      const newOrderedConfig = arrayMove(
-        currentTemplateConfig,
-        oldIndex,
-        newIndex
-      );
-      updateTemplateForSelectedButton(newOrderedConfig);
-    }
-  };
+    // Trigger Logic for '@'
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const cursorPos = textarea.selectionStart;
+      const lastChar = newText[cursorPos - 1];
 
-  const handlePartChange = (partId: string, newPart: Partial<CopyPart>) => {
-    const newModuleConfig = currentTemplateConfig.map((p) =>
-      p.id === partId ? { ...p, ...newPart } : p
-    );
-    updateTemplateForSelectedButton(newModuleConfig);
-  };
-
-  const handleAddPart = () => {
-    if (!partToAdd) return;
-    let newPart: CopyPart | undefined;
-
-    if (partToAdd === "static") {
-      newPart = {
-        id: `static-${Date.now()}`,
-        label: "Static Text",
-        type: "static",
-        value: "",
-        enabled: true,
-      };
-    } else if (partToAdd === "linebreak") {
-      newPart = {
-        id: `linebreak-${Date.now()}`,
-        label: "Line Break",
-        type: "linebreak",
-        lineBreakCount: 1,
-        enabled: true,
-      };
-    } else if (partToAdd.startsWith("loop_")) {
-      const source = partToAdd.split("_")[1] as keyof FormData;
-      newPart = {
-        id: `loop-${Date.now()}`,
-        label: `Loop over ${moduleNames[source]} Sub-Cases`,
-        type: "loop",
-        enabled: true,
-        loopSource: source,
-        loopOver: "subCases",
-        loopTemplate: [],
-      };
-    } else {
-      const [moduleId, fieldId] = partToAdd.split(".");
-      const partTemplate =
-        allModuleParts[moduleId as keyof typeof allModuleParts]?.[fieldId];
-      if (partTemplate) {
-        newPart = {
-          ...partTemplate,
-          id: `${partToAdd}-${Date.now()}`,
-          fieldId: fieldId,
-          moduleId: moduleId as keyof FormData,
-          context: "root",
-        };
+      if (lastChar === "@") {
+        setTriggerPosition(cursorPos);
+        const coords = getCaretCoordinates(textarea, cursorPos);
+        // Position relative to viewport (since modal is fixed)
+        // Adjust the 'top' slightly to appear below the cursor line
+        setPopoverPosition({ top: coords.top + 20, left: coords.left }); 
+        setFieldPickerOpen(true);
       }
     }
-
-    if (newPart) {
-      updateTemplateForSelectedButton([...currentTemplateConfig, newPart]);
-    }
   };
 
-  const handleDeletePart = (partId: string) => {
-    const newTemplate = currentTemplateConfig.filter((p) => p.id !== partId);
-    updateTemplateForSelectedButton(newTemplate);
+  const handleFieldSelect = (selectedValue: string) => {
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const originalContent = currentTemplate;
+    const placeholder = `{${selectedValue}}`;
+
+    // Replace the '@' with the placeholder
+    const newContent =
+      originalContent.slice(0, triggerPosition - 1) +
+      placeholder +
+      originalContent.slice(triggerPosition);
+
+    handleTemplateChange(newContent);
+    setFieldPickerOpen(false);
+
+    // Reset focus and cursor position
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = triggerPosition - 1 + placeholder.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+const insertLoop = (type: "ersattning" | "merkostnader") => {
+    // Inserts a pre-formatted loop block with the new explicit syntax
+    let content = "";
+    if (type === "ersattning") {
+        content = `\n{{#loop_ersattning}}\n{loop.ersattning.decision} ({loop.ersattning.trainNumber})\n{{/loop}}\n`;
+    } else {
+        content = `\n{{#loop_merkostnader}}\n{loop.merkostnader.category}: {loop.merkostnader.compensation}\n{{/loop}}\n`;
+    }
+    handleTemplateChange(currentTemplate + content);
+  };
+  const insertIfBlock = () => {
+    const content = `{{#if_has_subcases}}\n...\n{{else}}\n...\n{{/if}}\n`;
+    handleTemplateChange(currentTemplate + content);
   };
 
   const handleSave = () => onSave(internalSettings);
-  const handleSaveAndClose = () => {
-    onSave(internalSettings);
-    onClose();
-  };
-
+  const handleSaveAndClose = () => { onSave(internalSettings); onClose(); };
   const handleClose = () => {
-    if (
-      hasChanges &&
-      window.confirm(
-        "You have unsaved changes. Are you sure you want to close?"
-      )
-    ) {
-      onClose();
-    } else if (!hasChanges) {
-      onClose();
-    }
+    if (hasChanges && window.confirm("Unsaved changes. Close?")) onClose();
+    else if (!hasChanges) onClose();
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Settings</h2>
+    <>
+      <div className="modal-overlay" onClick={handleClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <h2>Settings</h2>
 
-        <div className="modal-tabs">
-          <button
-            className={`tab-button ${activeTab === "account" ? "active" : ""}`}
-            onClick={() => setActiveTab("account")}
-          >
-            Account
-          </button>
-          <button
-            className={`tab-button ${
-              activeTab === "templates" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("templates")}
-          >
-            Copy Templates
-          </button>
-          <button
-            className={`tab-button ${activeTab === "buttons" ? "active" : ""}`}
-            onClick={() => setActiveTab("buttons")}
-          >
-            Manage Buttons
-          </button>
-        </div>
-
-        <div className="modal-tab-content">
-          {activeTab === "account" && (
-            <div className="account-tab">
-              <p>
-                <strong>Logged in as:</strong> {currentUser?.email}
-              </p>
-              <button
-                onClick={() => {
-                  onLogout();
-                  onClose();
-                }}
-                className="button-logout"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-
-          {activeTab === "templates" && (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                }}
-              >
-                <select
-                  style={{ flex: 1 }}
-                  value={selectedModule}
-                  onChange={(e) =>
-                    setSelectedModule(e.target.value as keyof CopyConfig)
-                  }
-                >
-                  {Object.keys(moduleNames).map((key) => (
-                    <option key={key} value={key}>
-                      {moduleNames[key]}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  style={{ flex: 1 }}
-                  value={selectedButtonIndex}
-                  onChange={(e) =>
-                    setSelectedButtonIndex(parseInt(e.target.value, 10))
-                  }
-                >
-                  {currentButtons.map((button, index) => (
-                    <option key={button.id} value={index}>
-                      {button.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="settings-preview">
-                <label>Live Preview</label>
-                <textarea value={previewText} readOnly rows={4}></textarea>
-              </div>
-              <div className="settings-rows-container">
-                <DndContext
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={itemIds}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {currentTemplateConfig.map((part) =>
-                      part.type === "loop" ? (
-                        <SortableLoopBlock
-                          key={part.id}
-                          part={part}
-                          onUpdate={(updatedPart) =>
-                            handlePartChange(part.id, updatedPart)
-                          }
-                          onDelete={() => handleDeletePart(part.id)}
-                          allFieldsAsOptions={allFieldsAsOptions}
-                          subCaseFieldsAsOptions={subCaseFieldsAsOptions}
-                        />
-                      ) : (
-                        <SortableItem
-                          key={part.id}
-                          part={part}
-                          onPartChange={(changedPart) =>
-                            handlePartChange(part.id, changedPart)
-                          }
-                          onDelete={() => handleDeletePart(part.id)}
-                        />
-                      )
-                    )}
-                  </SortableContext>
-                </DndContext>
-              </div>
-              <div className="add-part-controls">
-                <select
-                  value={partToAdd}
-                  onChange={(e) => setPartToAdd(e.target.value)}
-                >
-                  <optgroup label="Structure">
-                    <option value="loop_ersattning">
-                      Ersättning Sub-Case Loop
-                    </option>
-                    <option value="loop_merkostnader">
-                      Merkostnad Sub-Case Loop
-                    </option>
-                  </optgroup>
-                  <optgroup label="General">
-                    <option value="static">Static Text</option>
-                    <option value="linebreak">Line Break</option>
-                  </optgroup>
-                  <optgroup label="Main Case Fields">
-                    {allFieldsAsOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-                <button onClick={handleAddPart}>Add</button>
-              </div>
-            </>
-          )}
-
-          {activeTab === "buttons" && (
-            <ManageButtonsTab
-              internalSettings={internalSettings}
-              setInternalSettings={setInternalSettings}
-            />
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <div className="modal-actions-left">
-            <button onClick={handleSave} disabled={!hasChanges}>
-              Save
-            </button>
-            <button onClick={handleSaveAndClose} disabled={!hasChanges}>
-              Save & Close
-            </button>
+          <div className="modal-tabs">
+            <button className={`tab-button ${activeTab === "account" ? "active" : ""}`} onClick={() => setActiveTab("account")}>Account</button>
+            <button className={`tab-button ${activeTab === "templates" ? "active" : ""}`} onClick={() => setActiveTab("templates")}>Copy Templates</button>
+            <button className={`tab-button ${activeTab === "buttons" ? "active" : ""}`} onClick={() => setActiveTab("buttons")}>Manage Buttons</button>
           </div>
-          <button onClick={handleClose}>Close</button>
+
+          <div className="modal-tab-content">
+            {activeTab === "account" && (
+              <div className="account-tab">
+                <p><strong>Logged in as:</strong> {currentUser?.email}</p>
+                <button onClick={() => { onLogout(); onClose(); }} className="button-logout">Logout</button>
+              </div>
+            )}
+
+            {activeTab === "templates" && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>
+                {/* Selectors */}
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <select style={{ flex: 1 }} value={selectedModule} onChange={(e) => setSelectedModule(e.target.value as keyof CopyConfig)}>
+                    {Object.keys(moduleNames).map((key) => <option key={key} value={key}>{moduleNames[key]}</option>)}
+                  </select>
+                  
+                  {currentButtons.length > 0 ? (
+                    <select style={{ flex: 1 }} value={selectedButtonIndex} onChange={(e) => setSelectedButtonIndex(parseInt(e.target.value, 10))}>
+                      {currentButtons.map((button, index) => <option key={button.id} value={index}>{button.label}</option>)}
+                    </select>
+                  ) : (
+                    <div style={{ flex: 1, color: "var(--color-placeholder)", fontStyle: "italic", display: "flex", alignItems: "center" }}>
+                      No buttons in this module
+                    </div>
+                  )}
+                </div>
+
+                {/* Editor Area (Only show if buttons exist) */}
+                {currentButtons.length > 0 ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9em', color: '#888' }}>Type <strong>@</strong> to insert field</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '5px'}}>
+                        <button type="button" className="button-text-small" onClick={insertIfBlock}>+ Huvud/Underärende (If/Else)</button>
+                          <button type="button" className="button-text-small" onClick={() => insertLoop("ersattning")}>+ Ersättning Loop</button>
+                          <button type="button" className="button-text-small" onClick={() => insertLoop("merkostnader")}>+ Merkostnad Loop</button>
+                      </div>
+                    </div>
+                    
+                    <textarea
+                      ref={textareaRef}
+                      value={currentTemplate}
+                      onChange={(e) => handleTemplateChange(e.target.value)}
+                      placeholder="Enter template text here... e.g., 'The case number is {ersattning.caseNumber}'"
+                      style={{ 
+                        flex: 1, 
+                        resize: 'none', 
+                        fontFamily: 'monospace', 
+                        fontSize: '13px', 
+                        padding: '10px', 
+                        lineHeight: '1.4' 
+                      }}
+                    />
+
+                    {/* Preview Area */}
+<div className="settings-preview" style={{ height: '35%', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+                        <label style={{ fontSize: '0.9em', fontWeight: 'bold', margin: 0 }}>Preview</label>
+                        
+                        {/* THE NEW TOGGLE SWITCH */}
+                        <div style={{ display: "flex", gap: "5px", fontSize: "0.8em" }}>
+                           <button 
+                             className={`button-text-small ${previewMode === "multi" ? "active" : ""}`}
+                             style={{ 
+                               backgroundColor: previewMode === "multi" ? "var(--color-primary)" : "transparent",
+                               color: previewMode === "multi" ? "white" : "var(--color-text)",
+                               border: "1px solid var(--color-primary)",
+                               cursor: "pointer"
+                             }}
+                             onClick={() => setPreviewMode("multi")}
+                           >
+                             Med Underärenden
+                           </button>
+                           <button 
+                             className={`button-text-small ${previewMode === "single" ? "active" : ""}`}
+                             style={{ 
+                               backgroundColor: previewMode === "single" ? "var(--color-primary)" : "transparent",
+                               color: previewMode === "single" ? "white" : "var(--color-text)",
+                               border: "1px solid var(--color-primary)",
+                               cursor: "pointer"
+                             }}
+                             onClick={() => setPreviewMode("single")}
+                           >
+                             Utan Underärenden
+                           </button>
+                        </div>
+                      </div>
+                      
+                      <textarea 
+                        value={previewText} 
+                        readOnly 
+                        style={{ 
+                          flex: 1, 
+                          resize: 'none', 
+                          backgroundColor: '#f5f5f5', 
+                          color: '#333', 
+                          fontSize: '13px',
+                          border: '1px solid #ccc' 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, border: "1px dashed var(--color-border)" }}>
+                    <p>Go to "Manage Buttons" to add buttons first.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "buttons" && (
+              <ManageButtonsTab internalSettings={internalSettings} setInternalSettings={setInternalSettings} />
+            )}
+          </div>
+
+          <div className="modal-actions">
+            <div className="modal-actions-left">
+              <button onClick={handleSave} disabled={!hasChanges}>Save</button>
+              <button onClick={handleSaveAndClose} disabled={!hasChanges}>Save & Close</button>
+            </div>
+            <button onClick={handleClose}>Close</button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {isFieldPickerOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: popoverPosition.top,
+            left: popoverPosition.left,
+            zIndex: 10000,
+          }}
+        >
+          <FieldPickerPopover
+            fields={allFieldsAsOptions}
+            onSelect={handleFieldSelect}
+            onClose={() => setFieldPickerOpen(false)}
+          />
+        </div>
+      )}
+    </>
   );
 }

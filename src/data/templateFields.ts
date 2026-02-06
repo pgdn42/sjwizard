@@ -1,135 +1,48 @@
-import type { CopyPart } from "../types";
+// src/data/templateFields.ts
 
-export const moduleNames: { [key: string]: string } = {
-  ersattning: "Ersättning",
-  merkostnader: "Merkostnader",
+export const moduleNames: Record<string, string> = {
+  ersattning: "EVF (Huvudärende)",
+  ersattning_sub: "EVF (Underärende)", // <-- NEW
+  merkostnader: "Merkostnader (Huvudärende)",
+  merkostnader_sub: "Merkostnader (Underärende)", // <-- NEW
   ticket: "Biljett",
-  train: "Tåg",
-  templates: "Mallar",
   notes: "Noteringar",
+  train: "Tåg",
 };
 
-export const allModuleParts: { [key: string]: { [id: string]: CopyPart } } = {
+// Simple definition for field metadata
+interface FieldDef {
+  label: string;
+}
+
+export const allModuleParts: Record<string, Record<string, FieldDef>> = {
   ersattning: {
-    caseNumber: {
-      id: "caseNumber",
-      label: "Ärendenummer",
-      type: "field",
-      enabled: true,
-    },
-    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
-    trainNumber: {
-      id: "trainNumber",
-      label: "Tågnummer",
-      type: "field",
-      enabled: true,
-    },
-    departureDate: {
-      id: "departureDate",
-      label: "Avgångsdatum",
-      type: "field",
-      enabled: true,
-    },
-    departureStation: {
-      id: "departureStation",
-      label: "Avgångsstation",
-      type: "field",
-      enabled: true,
-    },
-    arrivalStation: {
-      id: "arrivalStation",
-      label: "Ankomststation",
-      type: "field",
-      enabled: true,
-    },
-    delay: { id: "delay", label: "Försening", type: "field", enabled: true },
-    producer: {
-      id: "producer",
-      label: "Producent",
-      type: "field",
-      enabled: true,
-    },
-    datetime: {
-      id: "datetime",
-      label: "Current Date/Time",
-      type: "datetime",
-      enabled: true,
-    },
+    caseNumber: { label: "Ärendenummer" },
+    decision: { label: "Beslut" },
+    trainNumber: { label: "Tågnummer" },
+    departureDate: { label: "Avgångsdatum" },
+    departureStation: { label: "Avgångsstation" },
+    arrivalStation: { label: "Ankomststation" },
+    delay: { label: "Försening" },
   },
   merkostnader: {
-    caseNumber: {
-      id: "caseNumber",
-      label: "Ärendenummer",
-      type: "field",
-      enabled: true,
-    },
-    category: {
-      id: "category",
-      label: "Kategori",
-      type: "field",
-      enabled: true,
-    },
-    decision: { id: "decision", label: "Beslut", type: "field", enabled: true },
-    compensation: {
-      id: "compensation",
-      label: "Ersättning",
-      type: "field",
-      enabled: true,
-    },
+    caseNumber: { label: "Ärendenummer" },
+    category: { label: "Kategori" },
+    decision: { label: "Beslut" },
+    compensation: { label: "Ersättning" },
   },
   ticket: {
-    bookingNumber: {
-      id: "bookingNumber",
-      label: "Bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    cardNumber: {
-      id: "cardNumber",
-      label: "Kortnummer",
-      type: "field",
-      enabled: true,
-    },
-    cost: {
-      id: "cost",
-      label: "Beställningsnummer",
-      type: "field",
-      enabled: true,
-    },
+    bookingNumber: { label: "Bokningsnummer" },
+    cardNumber: { label: "Kortnummer" },
+    cost: { label: "Beställningsnummer/Pris" },
   },
   notes: {
-    bookingNumber: {
-      id: "bookingNumber",
-      label: "Bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    newBookingNumber: {
-      id: "newBookingNumber",
-      label: "Nytt bokningsnummer",
-      type: "field",
-      enabled: true,
-    },
-    extraNote: {
-      id: "extraNote",
-      label: "Extra notering",
-      type: "field",
-      enabled: true,
-    },
-    notesContent: {
-      id: "notesContent",
-      label: "Anteckningar",
-      type: "field",
-      enabled: true,
-    },
+    bookingNumber: { label: "Bokningsnummer" },
+    newBookingNumber: { label: "Nytt bokningsnummer" },
+    extraNote: { label: "Extra notering" },
+    notesContent: { label: "Anteckningar" },
   },
+  train: {
+    // Add specific train fields if necessary, or leave empty if handled dynamically
+  }
 };
-
-// A pre-formatted list of options for our pickers
-export const allFieldsAsOptions = Object.entries(allModuleParts).flatMap(
-  ([moduleId, parts]) =>
-    Object.entries(parts).map(([fieldId, part]) => ({
-      value: `${moduleId}.${fieldId}`,
-      label: `${moduleNames[moduleId] || "Unknown"}: ${part.label}`,
-    }))
-);

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FloatingLabel } from "./FloatingLabel";
-import type { ErsattningData } from "../types";
+import type { FormData, ModuleCopyConfig } from "../types"; // Import types
 import ChevronIcon from "../assets/ChevronIcon.tsx"; // Import the new icon
+import { DynamicButtonRow } from "./DynamicButtonRow"; // Added Import
 
 // A simple delete icon for the button
 const DeleteIcon = () => (
@@ -9,18 +10,22 @@ const DeleteIcon = () => (
 );
 
 interface ErsattningSubModuleProps {
-  subCase: ErsattningData;
-  onSubCaseChange: (field: keyof ErsattningData, value: string) => void;
-  onDelete: () => void; // New prop for deleting
+  subCase: any; // Or ErsattningData
+  onSubCaseChange: (field: string, value: string) => void;
+  onDelete: () => void;
+  // NEW PROPS
+  formData: FormData; 
+  customButtons: ModuleCopyConfig;
 }
 
 export function ErsattningSubModule({
   subCase,
   onSubCaseChange,
   onDelete,
+  formData,
+  customButtons,
 }: ErsattningSubModuleProps) {
-  // Join merged case numbers for the title
-  const [isCollapsed, setIsCollapsed] = useState(false); // Add state for collapsing
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const title = `Underärende ${subCase.caseNumbers?.join(", ")}`;
 
   return (
@@ -34,6 +39,16 @@ export function ErsattningSubModule({
           <ChevronIcon isCollapsed={isCollapsed} />
         </button>
         <span className="section-title sub-title">{title}</span>
+
+        {/* --- FIX: Use the variables here --- */}
+        <div style={{ marginLeft: "10px", flex: 1 }}>
+          <DynamicButtonRow
+            buttons={customButtons}
+            formData={formData}
+            contextData={subCase} // Pass sub-case as context
+          />
+        </div>
+
         <button
           className="delete-button"
           title="Delete this sub-case"
@@ -43,7 +58,7 @@ export function ErsattningSubModule({
           <DeleteIcon />
         </button>
       </div>
-      {/* Add all fields */}
+      
       {!isCollapsed && (
         <>
           <div className="ersattning-input-group">

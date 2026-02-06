@@ -10,6 +10,7 @@ interface ErsattningProps {
   onDeleteSubCase: (subCaseId: string) => void; // Add delete prop
   onClear: () => void;
   customButtons: ModuleCopyConfig;
+  subCaseButtons: ModuleCopyConfig; 
 }
 
 export function ErsattningVidForsening({
@@ -19,6 +20,7 @@ export function ErsattningVidForsening({
   onDeleteSubCase,
   onClear,
   customButtons,
+  subCaseButtons,
 }: ErsattningProps) {
   return (
     <div className="section-container">
@@ -93,13 +95,15 @@ export function ErsattningVidForsening({
       </div>
       {data.ersattning.subCases.map((subCase) => (
         <ErsattningSubModule
-          key={subCase.id}
-          subCase={subCase}
-          onSubCaseChange={(field, value) =>
-            onSubCaseChange(subCase.id!, field, value)
-          }
-          onDelete={() => onDeleteSubCase(subCase.id!)} // Wire up the delete handler
-        />
+      key={subCase.id}
+      subCase={subCase}
+      formData={data} // Pass full data
+      customButtons={subCaseButtons} // Pass sub-buttons
+      onSubCaseChange={(field, value) =>
+        onSubCaseChange(subCase.id!, field, value)
+      }
+      onDelete={() => onDeleteSubCase(subCase.id!)}
+    />
       ))}
     </div>
   );

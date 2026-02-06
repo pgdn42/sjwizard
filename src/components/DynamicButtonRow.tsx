@@ -15,27 +15,28 @@ const iconMap: { [key: string]: React.ComponentType } = {
 interface DynamicButtonRowProps {
   buttons: ModuleCopyConfig;
   formData: FormData;
+  contextData?: any; // <-- NEW PROP: Allow passing specific sub-case data for more flexible templates
   onClear?: () => void;
 }
 
 export function DynamicButtonRow({
   buttons,
   formData,
+  contextData, // <-- Destructure it
   onClear,
 }: DynamicButtonRowProps) {
   const handleButtonClick = (button: CustomButton) => {
+    // Pass contextData to the engine
     if (button.type === "link") {
-      let url = buildStringFromTemplate(button.template, formData, null, "");
+      let url = buildStringFromTemplate(button.template, formData, contextData);
       if (url) {
-        // Check if the URL starts with http:// or https://
         if (!/^https?:\/\//i.test(url)) {
-          // If not, prepend https://
           url = "https://" + url;
         }
         window.open(url, "", "width=1350,height=1000,screenX=0,screenY=500");
       }
     } else {
-      const textToCopy = buildStringFromTemplate(button.template, formData);
+      const textToCopy = buildStringFromTemplate(button.template, formData, contextData);
       navigator.clipboard.writeText(textToCopy);
     }
   };

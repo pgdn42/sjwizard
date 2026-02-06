@@ -64,10 +64,10 @@ export function ManageButtonsTab({
   };
 
   const handleAddButton = () => {
-    const buttonToAdd: CustomButton = {
+const buttonToAdd: CustomButton = {
       ...newButton,
       id: `btn-${Date.now()}`,
-      template: [],
+      template: "", // <--- INITIALIZE AS EMPTY STRING
     };
     setInternalSettings((prev) => ({
       ...prev,
