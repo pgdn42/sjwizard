@@ -55,8 +55,8 @@ export function buildStringFromTemplate(
       return source
         .map((item) => {
           return innerContent.replace(/{([a-zA-Z0-9_.]+)}/g, (__: string, key: string) => {
-             // A. Check for explicit "loop.TAG." prefix
-             const loopPrefix = `loop.${tag}.`;
+             // A. Check for explicit "underarende.TAG." prefix
+             const loopPrefix = `underarende.${tag}.`;
              if (key.startsWith(loopPrefix)) {
                 const itemKey = key.replace(loopPrefix, "");
                 if (item && itemKey in item) {
@@ -83,34 +83,34 @@ export function buildStringFromTemplate(
     
     // Handle special date formatting cases FIRST (before normal variable resolution)
     // These are virtual fields that transform departureDate
-    if (key === "ersattning.departureDateWithTime" || key === "loop.ersattning.departureDateWithTime" || key === "departureDateWithTime") {
+    if (key === "ersattning.departureDateWithTime" || key === "underarende.ersattning.departureDateWithTime" || key === "departureDateWithTime") {
       // Get the actual departureDate value
       const dateValue = contextData?.departureDate || getNestedValue(formData, "ersattning.departureDate");
       // Replace T with space: "2025-08-17T20:12" -> "2025-08-17 20:12"
       return dateValue ? String(dateValue).replace("T", " ") : "";
     }
     
-    if (key === "ersattning.departureDate" || key === "loop.ersattning.departureDate") {
+    if (key === "ersattning.departureDate" || key === "underarende.ersattning.departureDate") {
       // Extract just the date part: "2025-08-17T20:12" -> "2025-08-17"
       const dateValue = contextData?.departureDate || getNestedValue(formData, "ersattning.departureDate");
       return dateValue ? String(dateValue).split("T")[0] : "";
     }
     
-    // Handle loop.* prefixes when contextData is provided (for sub-case buttons)
+    // Handle underarende.* prefixes when contextData is provided (for sub-case buttons)
     if (contextData) {
-      // Check if the key uses loop.ersattning.* or loop.merkostnader.* prefix
-      if (key.startsWith("loop.ersattning.")) {
-        const fieldName = key.replace("loop.ersattning.", "");
+      // Check if the key uses underarende.ersattning.* or underarende.merkostnader.* prefix
+      if (key.startsWith("underarende.ersattning.")) {
+        const fieldName = key.replace("underarende.ersattning.", "");
         if (fieldName in contextData) {
           value = String(contextData[fieldName] || "");
         }
-      } else if (key.startsWith("loop.merkostnader.")) {
-        const fieldName = key.replace("loop.merkostnader.", "");
+      } else if (key.startsWith("underarende.merkostnader.")) {
+        const fieldName = key.replace("underarende.merkostnader.", "");
         if (fieldName in contextData) {
           value = String(contextData[fieldName] || "");
         }
       } else if (key in contextData) {
-        // Direct field access without loop prefix
+        // Direct field access without underarende prefix
         value = String(contextData[key] || "");
       } else {
         value = getNestedValue(formData, key);

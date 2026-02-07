@@ -91,22 +91,22 @@ const allFieldsAsOptions = useMemo(() => {
       }
     }
     
-    // 2. Ersättning Loop Fields
-    const evfPrefix = "loop.ersattning";
-    options.push({ value: `${evfPrefix}.decision`, label: "Loop (EVF): Beslut" });
-    options.push({ value: `${evfPrefix}.trainNumber`, label: "Loop (EVF): Tågnummer" });
-    options.push({ value: `${evfPrefix}.delay`, label: "Loop (EVF): Försening" });
-    options.push({ value: `${evfPrefix}.departureDate`, label: "Loop (EVF): Avgångsdatum" });
-    options.push({ value: `${evfPrefix}.departureDateWithTime`, label: "Loop (EVF): Avgångsdatum med tid" });
-    options.push({ value: `${evfPrefix}.departureStation`, label: "Loop (EVF): Från" });
-    options.push({ value: `${evfPrefix}.arrivalStation`, label: "Loop (EVF): Till" });
+    // 2. Ersättning Underärende Fields
+    const evfPrefix = "underarende.ersattning";
+    options.push({ value: `${evfPrefix}.decision`, label: "Underärende (EVF): Beslut" });
+    options.push({ value: `${evfPrefix}.trainNumber`, label: "Underärende (EVF): Tågnummer" });
+    options.push({ value: `${evfPrefix}.delay`, label: "Underärende (EVF): Försening" });
+    options.push({ value: `${evfPrefix}.departureDate`, label: "Underärende (EVF): Avgångsdatum" });
+    options.push({ value: `${evfPrefix}.departureDateWithTime`, label: "Underärende (EVF): Avgångsdatum med tid" });
+    options.push({ value: `${evfPrefix}.departureStation`, label: "Underärende (EVF): Från" });
+    options.push({ value: `${evfPrefix}.arrivalStation`, label: "Underärende (EVF): Till" });
 
-    // 3. Merkostnad Loop Fields
-    const mkPrefix = "loop.merkostnader";
-    options.push({ value: `${mkPrefix}.caseNumber`, label: "Loop (MK): Ärendenummer" });
-    options.push({ value: `${mkPrefix}.category`, label: "Loop (MK): Kategori" });
-    options.push({ value: `${mkPrefix}.decision`, label: "Loop (MK): Beslut" });
-    options.push({ value: `${mkPrefix}.compensation`, label: "Loop (MK): Ersättning" });
+    // 3. Merkostnad Underärende Fields
+    const mkPrefix = "underarende.merkostnader";
+    options.push({ value: `${mkPrefix}.caseNumber`, label: "Underärende (MK): Ärendenummer" });
+    options.push({ value: `${mkPrefix}.category`, label: "Underärende (MK): Kategori" });
+    options.push({ value: `${mkPrefix}.decision`, label: "Underärende (MK): Beslut" });
+    options.push({ value: `${mkPrefix}.compensation`, label: "Underärende (MK): Ersättning" });
     
     return options;
   }, []);
