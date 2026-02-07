@@ -2,12 +2,13 @@
 
 export const moduleNames: Record<string, string> = {
   ersattning: "EVF (Huvudärende)",
-  ersattning_sub: "EVF (Underärende)", // <-- NEW
+  ersattning_sub: "EVF (Underärende)",
   merkostnader: "Merkostnader (Huvudärende)",
-  merkostnader_sub: "Merkostnader (Underärende)", // <-- NEW
+  merkostnader_sub: "Merkostnader (Underärende)",
   ticket: "Biljett",
+  templates: "Templates",
+  chat: "Chat Templates",
   notes: "Noteringar",
-  train: "Tåg",
 };
 
 // Simple definition for field metadata

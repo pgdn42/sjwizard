@@ -523,7 +523,9 @@ function App() {
       <div className="chat-ticket-row">
         <ChatModule 
            chatTemplates={chatTemplates} 
-           userId={currentUser.uid} 
+           userId={currentUser.uid}
+           customButtons={userSettings.copyConfig.chat || []}
+           formData={formData}
         />
         
         <div className="ticket-container-wrapper">

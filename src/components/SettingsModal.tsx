@@ -19,8 +19,30 @@ const placeholderData: FormData = {
     delay: "65",
     producer: "SJ",
     subCases: [
-      { caseNumbers: ["SC-1"], decision: "50%", delay: "65", trainNumber: "99", departureDate: "2025-08-17", departureStation: "A", arrivalStation: "B", producer: "SJ" },
-      { caseNumbers: ["SC-2"], decision: "100%", delay: "125", trainNumber: "100", departureDate: "2025-08-17", departureStation: "A", arrivalStation: "B", producer: "SJ" },
+      { 
+        id: "sc-1",
+        caseNumbers: ["SC-1"], 
+        decision: "50%", 
+        delay: "65", 
+        trainNumber: "99", 
+        departureDate: "2025-08-17T14:30", 
+        departureStation: "Stockholm C", 
+        arrivalStation: "Uppsala C", 
+        producer: "SJ",
+        caseNumber: "SC-1"
+      },
+      { 
+        id: "sc-2",
+        caseNumbers: ["SC-2"], 
+        decision: "100%", 
+        delay: "125", 
+        trainNumber: "100", 
+        departureDate: "2025-08-18T10:00", 
+        departureStation: "Malmö C", 
+        arrivalStation: "Lund C", 
+        producer: "Öresundståg",
+        caseNumber: "SC-2"
+      },
     ],
   },
   merkostnader: {
@@ -29,8 +51,8 @@ const placeholderData: FormData = {
     decision: "Godkänd",
     compensation: "150",
     subCases: [
-      { caseNumber: "SC-M1", compensation: "100", decision: "Godkänd", category: "Mat" },
-      { caseNumber: "SC-M2", compensation: "50", decision: "Godkänd", category: "Transport" },
+      { id: "sc-m1", caseNumber: "SC-M1", compensation: "100", decision: "Godkänd", category: "Mat" },
+      { id: "sc-m2", caseNumber: "SC-M2", compensation: "50", decision: "Godkänd", category: "Transport" },
     ],
   },
   ticket: { bookingNumber: "ABC1234", cardNumber: "1234", cost: "599" },

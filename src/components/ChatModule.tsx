@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import type { ChatTemplateData } from "../types";
+import type { ChatTemplateData, FormData, ModuleCopyConfig } from "../types";
 import PencilIcon from "../assets/PencilIcon";
 import { ChatTemplateModal } from "./ChatTemplateModal";
+import { DynamicButtonRow } from "./DynamicButtonRow";
 
 // --- SVG Components for Flags ---
 const FlagSE = () => (
@@ -25,9 +26,11 @@ const FlagGB = () => (
 interface ChatModuleProps {
   chatTemplates: ChatTemplateData[];
   userId: string;
+  customButtons?: ModuleCopyConfig;
+  formData: FormData;
 }
 
-export function ChatModule({ chatTemplates, userId }: ChatModuleProps) {
+export function ChatModule({ chatTemplates, userId, customButtons = [], formData }: ChatModuleProps) {
   const [searchText, setSearchText] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [templateToEdit, setTemplateToEdit] = useState<ChatTemplateData | null>(null);
@@ -145,6 +148,10 @@ export function ChatModule({ chatTemplates, userId }: ChatModuleProps) {
     <div className="section-container chat-module-container">
       <div className="section-header" style={{ marginBottom: "10px" }}>
         <span className="section-title">Chat Templates</span>
+        <DynamicButtonRow
+          buttons={customButtons}
+          formData={formData}
+        />
       </div>
 
       <div className="chat-template-list" ref={listRef}>

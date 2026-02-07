@@ -55,6 +55,18 @@ export function buildStringFromTemplate(
       return source
         .map((item) => {
           return innerContent.replace(/{([a-zA-Z0-9_.]+)}/g, (__: string, key: string) => {
+             // Handle special virtual date fields for ersattning items
+             if (tag === "ersattning") {
+               if (key === "underarende.ersattning.departureDateWithTime" || key === "departureDateWithTime") {
+                 const dateValue = (item as any).departureDate;
+                 return dateValue ? String(dateValue).replace("T", " ") : "";
+               }
+               if (key === "underarende.ersattning.departureDate" || key === "departureDate") {
+                 const dateValue = (item as any).departureDate;
+                 return dateValue ? String(dateValue).split("T")[0] : "";
+               }
+             }
+             
              // A. Check for explicit "underarende.TAG." prefix
              const loopPrefix = `underarende.${tag}.`;
              if (key.startsWith(loopPrefix)) {
@@ -85,14 +97,37 @@ export function buildStringFromTemplate(
     // These are virtual fields that transform departureDate
     if (key === "ersattning.departureDateWithTime" || key === "underarende.ersattning.departureDateWithTime" || key === "departureDateWithTime") {
       // Get the actual departureDate value
-      const dateValue = contextData?.departureDate || getNestedValue(formData, "ersattning.departureDate");
+      let dateValue = contextData?.departureDate;
+      
+      // If no contextData, try to get from first subcase for underarende references
+      if (!dateValue && key === "underarende.ersattning.departureDateWithTime") {
+        dateValue = formData.ersattning?.subCases?.[0]?.departureDate;
+      }
+      
+      // Fallback to main case
+      if (!dateValue) {
+        dateValue = getNestedValue(formData, "ersattning.departureDate");
+      }
+      
       // Replace T with space: "2025-08-17T20:12" -> "2025-08-17 20:12"
       return dateValue ? String(dateValue).replace("T", " ") : "";
     }
     
     if (key === "ersattning.departureDate" || key === "underarende.ersattning.departureDate") {
+      // Get the actual departureDate value
+      let dateValue = contextData?.departureDate;
+      
+      // If no contextData, try to get from first subcase for underarende references
+      if (!dateValue && key === "underarende.ersattning.departureDate") {
+        dateValue = formData.ersattning?.subCases?.[0]?.departureDate;
+      }
+      
+      // Fallback to main case
+      if (!dateValue) {
+        dateValue = getNestedValue(formData, "ersattning.departureDate");
+      }
+      
       // Extract just the date part: "2025-08-17T20:12" -> "2025-08-17"
-      const dateValue = contextData?.departureDate || getNestedValue(formData, "ersattning.departureDate");
       return dateValue ? String(dateValue).split("T")[0] : "";
     }
     
@@ -116,7 +151,24 @@ export function buildStringFromTemplate(
         value = getNestedValue(formData, key);
       }
     } else {
-      value = getNestedValue(formData, key);
+      // No contextData - check if this is an underarende reference
+      if (key.startsWith("underarende.ersattning.")) {
+        const fieldName = key.replace("underarende.ersattning.", "");
+        // Try to get from first subcase
+        const firstSubCase = formData.ersattning?.subCases?.[0];
+        if (firstSubCase && fieldName in firstSubCase) {
+          value = String((firstSubCase as any)[fieldName] || "");
+        }
+      } else if (key.startsWith("underarende.merkostnader.")) {
+        const fieldName = key.replace("underarende.merkostnader.", "");
+        // Try to get from first subcase
+        const firstSubCase = formData.merkostnader?.subCases?.[0];
+        if (firstSubCase && fieldName in firstSubCase) {
+          value = String((firstSubCase as any)[fieldName] || "");
+        }
+      } else {
+        value = getNestedValue(formData, key);
+      }
     }
     
     return value;
